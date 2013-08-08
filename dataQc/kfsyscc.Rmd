@@ -1,0 +1,134 @@
+```{r loadData, include=FALSE}
+## SCRIPT TO QC AND PROCESS THE KFSYSCC DATASET
+#####
+## ANALYST: BRIAN M. BOT
+#####
+require(synapseClient)
+require(rGithubClient)
+require(affy)
+require(affyPLM)
+require(limma)
+require(chron)
+require(corpcor)
+require(ggplot2)
+require(hgu133plus2.db)
+
+## GET THE LOCATION OF THIS FILE ON GITHUB
+crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/kfsyscc.Rmd")
+
+## CONVENIENCE FUNCTION FOR SVD EVALUATIONS
+fs <- function(x){
+  require(corpcor)
+  u <- fast.svd(t(scale(t(x), scale = FALSE)), tol = 0)
+  u$d <- u$d^2/sum(u$d^2)
+  return(u)
+}
+
+synFolder <- "syn2025137"
+
+## GRAB THE TAR FILE - UNTAR IN TEMP DIRECTORY
+kfEnt <- synGet("syn2025141")
+kfDir <- tempfile(pattern="kfDir")
+dir.create(kfDir)
+untar(getFileLocation(kfEnt), exdir = kfDir)
+theseFiles <- list.celfiles(kfDir, recursive=T, full.names=T)
+
+## READ IN CEL FILES
+kfExpr <- ReadAffy(filenames=theseFiles)
+
+## READ IN THE CLINICAL DATA
+clinFile <- synGet("syn2025168")
+kfClin <- read.delim(getFileLocation(clinFile), as.is=T)
+
+stopifnot(all(sapply(strsplit(sampleNames(kfExpr), ".", fixed=T), "[[", 1) == kfClin$SN))
+rownames(kfClin) <- sampleNames(kfExpr)
+kfClin$scanDate <- protocolData(kfRaw)$ScanDate
+kfClin$scanDate <- chron(gsub(" .*", "", kfClin$scanDate))
+pData(kfExpr) <- kfClin
+kfRaw <- kfExpr
+
+
+## ORDER SAMPLES IN CHRONOLOGICAL ORDER OF SCAN DATE
+kfRaw <- kfRaw[, order(pData(kfRaw)$scanDate)]
+
+## PERFORM SOME PRELIMINARY QC
+pset <- fitPLM(kfRaw)
+```
+## Overview of the KFSYSCC data
+KFSYSCC generously provided `r length(theseFiles)` CRC samples with expression profiling on the Affymetrix U133 Plus 2 platform.
+
+## Initial assessment of expression data
+These samples were QCed initially using the `affyPLM` package. The following plot shows the Relative Log Expression (RLE) and Normalized Unscaled Standard Errors (NUSE) plots for all samples. Given the high NUSE for samples processed before 01/01/2007, those `r sum(pData(kfRaw)$scanDate <= "01/01/07")` samples were removed from all further analyses.
+```{r plmPlots, echo=FALSE, fig.height=10, fig.width=6}
+par(mfrow=c(2,1))
+RLE(pset, main="RLE for CRC322")
+NUSE(pset, main="NUSE for CRC322")
+rm(pset)
+```
+```{r subset, include=FALSE}
+# REMOVE EARLY SAMPLES; LARGE SE FROM NUSE PLOT
+kfRaw <- kfRaw[ , pData(kfRaw)$scanDate > "01/01/07" ]
+exprSet <- rma(kfRaw)
+expr <- exprs(exprSet)
+clin <- pData(kfRaw)
+
+## SVD ON EXPRESSION MATRIX -- ASSESS OVERALL STRUCTURE AND POSSIBLE LATENT STRUCTURE
+s <- fs(expr)
+```
+## First pass normalization
+We then ran `rma` on the resulting `r ncol(expr)` samples which consolidates the feature space down to `r nrow(expr)` probesets. Singular Value Decomposition (SVD) was performed on the entire resulting expression matrix to assess its structure.
+```{r rawSvd, echo=FALSE}
+qplot(1:length(s$d), s$d,
+      xlab="eigen gene",
+      ylab="% variance explained")
+qplot(s$v[, 1], s$v[, 2],
+      xlab="1st svd",
+      ylab="2nd svd")
+```
+```{r cleanClin, include=FALSE}
+clinOut <- data.frame(id=rownames(clin),
+                      age=clin$AGE,
+                      gender=NA,
+                      stage=clin$Stage,
+                      tumorLocation=NA,
+                      dfsMo=NA,
+                      dfsStat=NA,
+                      osMo=clin$FT,
+                      osStat=ifelse(clin$Death == 0 | is.na(clin$Death), 0, 1),
+                      batch=clin$scanDate,
+                      microsatelite=NA,
+                      cimp=NA,
+                      adjChemo=NA)
+```
+```{r saveObject, include=FALSE}
+## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
+act <- Activity(name="QC knitr script", used=list(kfEnt, clinFile, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- synStore(act)
+
+## EXPRESSION FILE
+expr <- as.data.frame(expr)
+tmpNames <- colnames(expr)
+expr$feature <- rownames(expr)
+expr <- expr[, c("feature", tmpNames)]
+kfExprFile <- file.path(tempdir(), "KFSYSCC_expression.tsv")
+write.table(expr, file=kfExprFile, sep="\t", quote=FALSE, row.names=FALSE)
+
+exprFile <- File(path=kfExprFile, parentId=synFolder)
+generatedBy(exprFile) <- act
+exprFile <- synStore(exprFile)
+act <- generatedBy(exprFile)
+
+## CLINICAL FILE
+kfClinFile <- file.path(tempdir(), "KFSYSCC_clinical.tsv")
+write.table(clinOut, file=kfClinFile, sep="\t", quote=FALSE, row.names=FALSE)
+
+clinFile <- File(path=kfClinFile, parentId=synFolder)
+generatedBy(clinFile) <- act
+clinFile <- synStore(clinFile)
+```
+## QC output
+The resulting tab delimited text files contain expression values on `r nrow(expr)` genes as well as clinical information on `r ncol(expr)-1`.
+
+
+.
