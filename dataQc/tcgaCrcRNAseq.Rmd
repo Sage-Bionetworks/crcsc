@@ -1,0 +1,189 @@
+## Overview of the TCGA data
+
+Expression data from the Illumina Hi-seq machines (RNAseqV2 data frozen by the TCGA Pan Cancer Analysis Group) and their corresponding clinical data were consolidated across the Colon Adenocarcinoma (COAD) and Rectum Adenocarcinoma (READ) cohorts from TCGA. Only genes that had at least one sample with at least one count was included in QC processing. Values were transformed by adding one and taking the log base 2 (`log2(expr+1)`).
+```{r loadData, include=FALSE}
+## FUNCTIONS TO EXTRACT DATA OBJECTS FROM SYNAPSE AND QC
+#####
+## ANALYST: BRIAN M. BOT
+#####
+require(synapseClient)
+require(rGithubClient)
+require(Biobase)
+require(limma)
+require(corpcor)
+require(ggplot2)
+
+## GET THE LOCATION OF THIS FILE ON GITHUB
+crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
+rmdUrl <- getPermlink(crcscRepo, "tcgaCrcRNAseq.Rmd")
+
+## READ IN FILES AS FORMATED BY TCGA PAN CANCER GROUP - UTILIZING OLD 'DATA' OBJECTS INSTEAD OF FILES
+loadTCGAFile <- function(ent){
+  df <- read.delim(file.path(ent$cacheDir, ent$files), header=F, as.is=T)
+  colnames(df) <- as.character(df[1, ])
+  df <- df[-1, ]
+  rownames(df) <- as.character(df[, 1])
+  df <- df[, -1]
+  return(df)
+}
+
+## EXTRACT TCGA PATIENT IDS FROM LONGER TCGA IDS
+extractTcgaPatientIds <- function(tcgaIds){
+        
+        fixIds <- gsub("\\.","-", as.matrix(tcgaIds))
+        patientIds <- sapply(strsplit(fixIds, "-", fixed=T), function(x){
+          paste(x[1:3], collapse="-")
+        })
+        return(patientIds)
+}
+
+## COMBINE PROBES TO GENES BY FIRST SV
+combineProbesToGene <- function(expr, genes, method="svd"){
+  
+  if(is.list(genes)) genes <- unlist(genes)
+  
+  stopifnot(dim(expr)[1] ==  length(genes))
+  ugenes <- unique(genes)
+  ugenes <- sort(ugenes[!is.na(ugenes)])
+  M <- matrix(NaN, ncol=dim(expr)[2], nrow=length(ugenes),
+              dimnames=list(ugenes, colnames(expr)))
+  
+  for(gene in ugenes){
+    subExpr <- as.matrix(expr[which(genes == gene),])
+    if(dim(subExpr)[2] == 1){
+      M[gene, ] <- subExpr
+    }else{
+      tmp <- svd(subExpr - rowMeans(subExpr))$v[,1]
+      tmpC <- mean(cor(tmp, t(subExpr)))
+      multiplier <- ifelse(tmpC < 0, -1, 1)
+      M[gene,] <- tmp * multiplier
+    }
+  }
+  return(M)
+}
+
+## CONVENIENCE FUNCTION FOR SVD EVALUATIONS
+fs <- function(x){
+  require(corpcor)
+  u <- fast.svd(t(scale(t(x), scale = FALSE)), tol = 0)
+  u$d <- u$d^2/sum(u$d^2)
+  return(u)
+}
+
+
+## SYNAPSE FOLDER FOR THE QCED DATA
+synFolder <- "syn2024662"
+
+## CREATE A DIRECTORY FOR PLOTS TO BE UPLOADED TO SYNAPSE
+tcgaRNAseqDir <- file.path(tempdir(), "tcgaRNAseqQC")
+dir.create(tcgaRNAseqDir)
+
+coadRNAseqSyn <- synGet("syn1446197")
+coadRNAseq <- loadTCGAFile(coadRNAseqSyn)
+readRNAseqSyn <- synGet("syn1446276")
+readRNAseq <- loadTCGAFile(readRNAseqSyn)
+
+if( all(rownames(coadRNAseq) == rownames(readRNAseq)) ){
+  theseFeatures <- rownames(coadRNAseq)
+  crcRNAseq <- cbind(coadRNAseq, readRNAseq)
+} else{
+  stop("rownames do not match")
+}
+
+thesePatients <- extractTcgaPatientIds(colnames(crcRNAseq))
+
+if( all(duplicated(thesePatients) == FALSE) ){
+  colnames(crcRNAseq) <- thesePatients
+} else{
+  stop("duplicated patients")
+}
+
+## CONVERT TO NUMERIC MATRIX
+crcRNAseq <- apply(crcRNAseq, 2, as.numeric)
+rownames(crcRNAseq) <- theseFeatures
+expr <- crcRNAseq
+
+## GRAB THE CLINICAL DATA
+coadClinSyn <- synGet("syn1446080")
+coadClin <- loadTCGAFile(coadClinSyn)
+readClinSyn <- synGet("syn1446153")
+readClin <- loadTCGAFile(readClinSyn)
+coadClin$rns <- rownames(coadClin)
+readClin$rns <- rownames(readClin)
+
+crcClin <- merge(x=coadClin, y=readClin, all=T)
+rownames(crcClin) <- crcClin$rns
+crcClin$rns <- NULL
+clin <- crcClin
+
+## SUBSET TO COHORT OF INTEREST
+clin <- clin[colnames(expr), ]
+
+## GET RID OF GENES WITH NO GENE SYMBOL
+rns <- sapply(strsplit(rownames(expr), "|", fixed=T), "[[", 1)
+idx <- rns != "?"
+expr <- expr[idx, ]
+expr <- log2(expr+1)
+
+## ONE DUPLICATED GENE - COLLAPSE BY USING SVD
+expr <- combineProbesToGene(expr, rns[idx])
+
+## SVD ON EXPRESSION MATRIX -- ASSESS OVERALL STRUCTURE AND POSSIBLE LATENT STRUCTURE
+s <- fs(expr)
+tissue <- factor(ifelse(grepl("RECTUM", clin$tumor_tissue_site), "rectum", "colon"))
+```
+
+## Initial assessment of TCGA level 3 data
+The few genes that had multiple expression values were consolidated to a single value via the first eigen gene. The subsequent expression values were assessed for latent structure by exploring the Singular Value Decomposition (SVD) of the expression matrix. As can be seen in plots below, there does not appear to be any latent structure.
+
+```{r svdRaw, echo=FALSE, fig.height=5, fig.width=7}
+qplot(1:length(s$d), s$d,
+      xlab="eigen gene",
+      ylab="% variance explained")
+qplot(s$v[, 1], s$v[, 2], colour=tissue,
+      xlab="1st svd",
+      ylab="2nd svd")
+```
+```{r clinCuration, include=FALSE}
+clinOut <- data.frame(id=clin$bcr_patient_barcode,
+                      age=clin$age_at_initial_pathologic_diagnosis,
+                      gender=tolower(clin$gender),
+                      stage=clin$tumor_stage,
+                      tumorLocation=NA,
+                      dfsMo=NA,
+                      dfsStat=NA,
+                      osMo=ifelse(clin$vital_status=="DECEASED",
+                                  as.numeric(clin$days_to_death[clin$vital_status == "DECEASED"])*365/12,
+                                  as.numeric(clin$days_to_last_known_alive[clin$vital_status != "DECEASED"])*365/12),
+                      osStat=ifelse(clin$vital_status=="DECEASED", 1, 0),
+                      batch=NA,
+                      microsatelite=clin$mononucleotide_and_dinucleotide_marker_panel_analysis_status,
+                      cimp=NA,
+                      adjChemo=NA)
+
+```
+```{r saveFiles, include=FALSE}
+## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
+act <- Activity(name="QC knitr script", used=list(readRNAseqSyn, readClinSyn, coadRNAseqSyn, coadClinSyn, list(url=rmdUrl, wasExecuted=TRUE)))
+act <- synStore(act)
+
+## EXPRESSION FILE
+tcgaCrcExprFile <- file.path(tempdir(), "TCGACRC_expression.txt")
+write.table(exprAdj, file=tcgaCrcExprFile, sep="\t", quote=FALSE)
+
+exprFile <- File(path=tcgaCrcExprFile, parentId=synFolder)
+generatedBy(exprFile) <- act
+exprFile <- synStore(exprFile)
+act <- generatedBy(exprFile)
+
+## CLINICAL FILE
+tcgaCrcClinFile <- file.path(tempdir(), "TCGACRC_clinical.txt")
+write.table(clinOut, file=tcgaCrcClinFile, sep="\t", quote=FALSE)
+
+clinFile <- File(path=tcgaCrcClinFile, parentId=synFolder)
+generatedBy(clinFile) <- act
+clinFile <- synStore(clinFile)
+```
+
+## QC output
+This resulting tab delimited text files contain expression values on `r nrow(exprAdj)` genes as well as clinical information on `r ncol(exprAdj)` samples.
