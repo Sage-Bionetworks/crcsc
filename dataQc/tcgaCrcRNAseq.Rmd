@@ -15,11 +15,11 @@ require(ggplot2)
 
 ## GET THE LOCATION OF THIS FILE ON GITHUB
 crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
-rmdUrl <- getPermlink(crcscRepo, "tcgaCrcRNAseq.Rmd")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/tcgaCrcRNAseq.Rmd")
 
 ## READ IN FILES AS FORMATED BY TCGA PAN CANCER GROUP - UTILIZING OLD 'DATA' OBJECTS INSTEAD OF FILES
 loadTCGAFile <- function(ent){
-  df <- read.delim(file.path(ent$cacheDir, ent$files), header=F, as.is=T)
+  df <- read.delim(file.path(ent$cacheDir, ent$files), header=F, as.is=T, na.strings=c("", "NA", " "))
   colnames(df) <- as.character(df[1, ])
   df <- df[-1, ]
   rownames(df) <- as.character(df[, 1])
@@ -164,12 +164,16 @@ clinOut <- data.frame(id=clin$bcr_patient_barcode,
 ```
 ```{r saveFiles, include=FALSE}
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
-act <- Activity(name="QC knitr script", used=list(readRNAseqSyn, readClinSyn, coadRNAseqSyn, coadClinSyn, list(url=rmdUrl, wasExecuted=TRUE)))
+act <- Activity(name="QC knitr script", used=list(readRNAseqSyn, readClinSyn, coadRNAseqSyn, coadClinSyn, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
 act <- synStore(act)
 
 ## EXPRESSION FILE
-tcgaCrcExprFile <- file.path(tempdir(), "TCGACRC_expression.txt")
-write.table(exprAdj, file=tcgaCrcExprFile, sep="\t", quote=FALSE)
+expr <- as.data.frame(expr)
+tmpNames <- colnames(expr)
+expr$feature <- rownames(expr)
+expr <- expr[, c("feature", tmpNames)]
+tcgaCrcExprFile <- file.path(tempdir(), "TCGACRC_expression.tsv")
+write.table(expr, file=tcgaCrcExprFile, sep="\t", quote=FALSE, row.names=FALSE)
 
 exprFile <- File(path=tcgaCrcExprFile, parentId=synFolder)
 generatedBy(exprFile) <- act
@@ -177,13 +181,15 @@ exprFile <- synStore(exprFile)
 act <- generatedBy(exprFile)
 
 ## CLINICAL FILE
-tcgaCrcClinFile <- file.path(tempdir(), "TCGACRC_clinical.txt")
-write.table(clinOut, file=tcgaCrcClinFile, sep="\t", quote=FALSE)
+tcgaCrcClinFile <- file.path(tempdir(), "TCGACRC_clinical.tsv")
+write.table(clinOut, file=tcgaCrcClinFile, sep="\t", quote=FALSE, row.names=FALSE)
 
 clinFile <- File(path=tcgaCrcClinFile, parentId=synFolder)
 generatedBy(clinFile) <- act
 clinFile <- synStore(clinFile)
 ```
-
 ## QC output
-This resulting tab delimited text files contain expression values on `r nrow(exprAdj)` genes as well as clinical information on `r ncol(exprAdj)` samples.
+This resulting tab delimited text files contain expression values on `r nrow(expr)` genes as well as clinical information on `r ncol(expr)-1` samples.
+
+
+.
