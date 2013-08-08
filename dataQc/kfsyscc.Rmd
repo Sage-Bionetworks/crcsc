@@ -43,7 +43,7 @@ kfClin <- read.delim(getFileLocation(clinFile), as.is=T)
 
 stopifnot(all(sapply(strsplit(sampleNames(kfExpr), ".", fixed=T), "[[", 1) == kfClin$SN))
 rownames(kfClin) <- sampleNames(kfExpr)
-kfClin$scanDate <- protocolData(kfRaw)$ScanDate
+kfClin$scanDate <- protocolData(kfExpr)$ScanDate
 kfClin$scanDate <- chron(gsub(" .*", "", kfClin$scanDate))
 pData(kfExpr) <- kfClin
 kfRaw <- kfExpr
@@ -71,7 +71,6 @@ rm(pset)
 kfRaw <- kfRaw[ , pData(kfRaw)$scanDate > "01/01/07" ]
 exprSet <- rma(kfRaw)
 expr <- exprs(exprSet)
-clin <- pData(kfRaw)
 
 ## SVD ON EXPRESSION MATRIX -- ASSESS OVERALL STRUCTURE AND POSSIBLE LATENT STRUCTURE
 s <- fs(expr)
@@ -86,24 +85,9 @@ qplot(s$v[, 1], s$v[, 2],
       xlab="1st svd",
       ylab="2nd svd")
 ```
-```{r cleanClin, include=FALSE}
-clinOut <- data.frame(id=rownames(clin),
-                      age=clin$AGE,
-                      gender=NA,
-                      stage=clin$Stage,
-                      tumorLocation=NA,
-                      dfsMo=NA,
-                      dfsStat=NA,
-                      osMo=clin$FT,
-                      osStat=ifelse(clin$Death == 0 | is.na(clin$Death), 0, 1),
-                      batch=clin$scanDate,
-                      microsatelite=NA,
-                      cimp=NA,
-                      adjChemo=NA)
-```
 ```{r saveObject, include=FALSE}
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
-act <- Activity(name="QC knitr script", used=list(kfEnt, clinFile, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- Activity(name="QC knitr script", used=list(kfEnt, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
 act <- synStore(act)
 
 ## EXPRESSION FILE
@@ -117,18 +101,9 @@ write.table(expr, file=kfExprFile, sep="\t", quote=FALSE, row.names=FALSE)
 exprFile <- File(path=kfExprFile, parentId=synFolder)
 generatedBy(exprFile) <- act
 exprFile <- synStore(exprFile)
-act <- generatedBy(exprFile)
-
-## CLINICAL FILE
-kfClinFile <- file.path(tempdir(), "KFSYSCC_clinical.tsv")
-write.table(clinOut, file=kfClinFile, sep="\t", quote=FALSE, row.names=FALSE)
-
-clinFile <- File(path=kfClinFile, parentId=synFolder)
-generatedBy(clinFile) <- act
-clinFile <- synStore(clinFile)
 ```
 ## QC output
-The resulting tab delimited text files contain expression values on `r nrow(expr)` genes as well as clinical information on `r ncol(expr)-1`.
+The resulting tab delimited text files contain expression values on `r nrow(expr)` genes and `r ncol(expr)-1` samples.
 
 
 .
