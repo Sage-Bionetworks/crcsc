@@ -1,6 +1,7 @@
 ##! TCGA CRC Clinical Data
 
-This wiki summarizes the clinical data for patients which have RNA-seq data available and QCed in this project.
+This wiki summarizes the clinical data for patients which have RNA-seq data available and QCed in this project. The resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
+
 ${toc}
 ```{r loadData, include=FALSE}
 ## FUNCTIONS TO EXTRACT DATA OBJECTS FROM SYNAPSE AND CURATE CLINICAL INFO
@@ -76,51 +77,61 @@ clinOut <- data.frame(id=clin$bcr_patient_barcode,
                       nrasStatus = clin$"NRAS:mutation",
                       erbb2Status = clin$"ERBB2:mutation")
 ```
-### Age Distribution
-```{r age, echo=FALSE, fig.height=4, fig.width=6}
+## Age Distribution
+```{r age, echo=FALSE, fig.height=5, fig.width=8}
 ggplot(data=clinOut) + geom_density(aes(x=age), fill="blue", alpha=0.5)
 ```
-### Gender
+## Gender
 ```{r gender, echo=FALSE, results='asis'}
 synTable(table(clinOut$gender))
 ```
-### Tumor Stage
+## Tumor Stage
+####! Overall
 ```{r stage, echo=FALSE, results='asis'}
 synTable(table(clinOut$stage))
+```
+####! T Stage
+```{r tstage, echo=FALSE, results='asis'}
 synTable(table(clinOut$tStage))
+```
+####! N Stage
+```{r nstage, echo=FALSE, results='asis'}
 synTable(table(clinOut$nStage))
+```
+####! M Stage
+```{r mstage, echo=FALSE, results='asis'}
 synTable(table(clinOut$mStage))
 ```
-### Tumor Location
+## Tumor Location
 ```{r location, echo=FALSE, results='asis'}
 synTable(table(clinOut$tumorLocation))
 ```
-### MSI
+## MSI
 ```{r msi, echo=FALSE, results='asis'}
 synTable(table(clinOut$microsatelite))
 ```
-### Mutation Status
-#### KRAS
+## Mutation Status
+####! KRAS
 ```{r kras, echo=FALSE, results='asis'}
 synTable(table(clinOut$krasStatus))
 ```
-#### BRAF
+####! BRAF
 ```{r braf, echo=FALSE, results='asis'}
 synTable(table(clinOut$brafStatus))
 ```
-#### NRAS
+####! NRAS
 ```{r nras, echo=FALSE, results='asis'}
 synTable(table(clinOut$nrasStatus))
 ```
-#### EGFR
+####! EGFR
 ```{r egfr, echo=FALSE, results='asis'}
 synTable(table(clinOut$egfrStatus))
 ```
-#### ALK
+####! ALK
 ```{r alk, echo=FALSE, results='asis'}
 synTable(table(clinOut$alkStatus))
 ```
-#### ERBB2
+####! ERBB2
 ```{r erbb2, echo=FALSE, results='asis'}
 synTable(table(clinOut$erbb2Status))
 ```
@@ -137,8 +148,6 @@ clinFile <- File(path=tcgaCrcClinFile, parentId=synFolder)
 generatedBy(clinFile) <- act
 clinFile <- synStore(clinFile)
 ```
-### Clinical Data File
-This resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
 
 
 .
