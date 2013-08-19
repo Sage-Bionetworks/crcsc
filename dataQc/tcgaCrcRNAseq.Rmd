@@ -1,6 +1,6 @@
-## Overview of the TCGA data
+## TCGA CRC RNA-Seq Expression Data
 
-Expression data from the Illumina Hi-seq machines (RNAseqV2 data frozen by the TCGA Pan Cancer Analysis Group) and their corresponding clinical data were consolidated across the Colon Adenocarcinoma (COAD) and Rectum Adenocarcinoma (READ) cohorts from TCGA. Only genes that had at least one sample with at least one count was included in QC processing. Values were transformed by adding one and taking the log base 2 (`log2(expr+1)`).
+Expression data from the Illumina Hi-seq machines (RNAseqV2 data frozen by the TCGA Pan Cancer Analysis Group) were consolidated across the Colon Adenocarcinoma (COAD) and Rectum Adenocarcinoma (READ) cohorts from TCGA. Only genes that had at least one sample with at least one count was included in QC processing. Values were transformed by adding one and taking the log base 2 (`log2(expr+1)`).
 ```{r loadData, include=FALSE}
 ## FUNCTIONS TO EXTRACT DATA OBJECTS FROM SYNAPSE AND QC
 #####
@@ -71,8 +71,8 @@ fs <- function(x){
 }
 
 
-## SYNAPSE FOLDER FOR THE QCED DATA
-synFolder <- "syn2024662"
+## SYNAPSE FOLDER FOR THE TCGA DATA
+synFolder <- "syn2023932"
 
 ## CREATE A DIRECTORY FOR PLOTS TO BE UPLOADED TO SYNAPSE
 tcgaRNAseqDir <- file.path(tempdir(), "tcgaRNAseqQC")
@@ -103,22 +103,6 @@ crcRNAseq <- apply(crcRNAseq, 2, as.numeric)
 rownames(crcRNAseq) <- theseFeatures
 expr <- crcRNAseq
 
-## GRAB THE CLINICAL DATA
-coadClinSyn <- synGet("syn1446080")
-coadClin <- loadTCGAFile(coadClinSyn)
-readClinSyn <- synGet("syn1446153")
-readClin <- loadTCGAFile(readClinSyn)
-coadClin$rns <- rownames(coadClin)
-readClin$rns <- rownames(readClin)
-
-crcClin <- merge(x=coadClin, y=readClin, all=T)
-rownames(crcClin) <- crcClin$rns
-crcClin$rns <- NULL
-clin <- crcClin
-
-## SUBSET TO COHORT OF INTEREST
-clin <- clin[colnames(expr), ]
-
 ## GET RID OF GENES WITH NO GENE SYMBOL
 rns <- sapply(strsplit(rownames(expr), "|", fixed=T), "[[", 1)
 idx <- rns != "?"
@@ -130,11 +114,11 @@ expr <- combineProbesToGene(expr, rns[idx])
 
 ## SVD ON EXPRESSION MATRIX -- ASSESS OVERALL STRUCTURE AND POSSIBLE LATENT STRUCTURE
 s <- fs(expr)
-tissue <- factor(ifelse(grepl("RECTUM", clin$tumor_tissue_site), "rectum", "colon"))
+tissue <- c(rep("colon", ncol(coadRNAseq)), rep("rectal", ncol(readRNAseq)))
 ```
 
 ## Initial assessment of TCGA level 3 data
-The few genes that had multiple expression values were consolidated to a single value via the first eigen gene. The subsequent expression values were assessed for latent structure by exploring the Singular Value Decomposition (SVD) of the expression matrix. As can be seen in plots below, there does not appear to be any latent structure.
+The few genes that had multiple expression values were consolidated to a single value via the first eigen gene. The subsequent expression values were assessed for latent structure by exploring the Singular Value Decomposition (SVD) of the expression matrix.
 
 ```{r svdRaw, echo=FALSE, fig.height=5, fig.width=7}
 qplot(1:length(s$d), s$d,
@@ -144,27 +128,9 @@ qplot(s$v[, 1], s$v[, 2], colour=tissue,
       xlab="1st svd",
       ylab="2nd svd")
 ```
-```{r clinCuration, include=FALSE}
-clinOut <- data.frame(id=clin$bcr_patient_barcode,
-                      age=clin$age_at_initial_pathologic_diagnosis,
-                      gender=tolower(clin$gender),
-                      stage=clin$tumor_stage,
-                      tumorLocation=NA,
-                      dfsMo=NA,
-                      dfsStat=NA,
-                      osMo=ifelse(clin$vital_status=="DECEASED",
-                                  as.numeric(clin$days_to_death[clin$vital_status == "DECEASED"])*365/12,
-                                  as.numeric(clin$days_to_last_known_alive[clin$vital_status != "DECEASED"])*365/12),
-                      osStat=ifelse(clin$vital_status=="DECEASED", 1, 0),
-                      batch=NA,
-                      microsatelite=clin$mononucleotide_and_dinucleotide_marker_panel_analysis_status,
-                      cimp=NA,
-                      adjChemo=NA)
-
-```
 ```{r saveFiles, include=FALSE}
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
-act <- Activity(name="QC knitr script", used=list(readRNAseqSyn, readClinSyn, coadRNAseqSyn, coadClinSyn, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- Activity(name="RNA-seq QC knitr script", used=list(readRNAseqSyn, coadRNAseqSyn, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
 act <- synStore(act)
 
 ## EXPRESSION FILE
@@ -178,18 +144,9 @@ write.table(expr, file=tcgaCrcExprFile, sep="\t", quote=FALSE, row.names=FALSE)
 exprFile <- File(path=tcgaCrcExprFile, parentId=synFolder)
 generatedBy(exprFile) <- act
 exprFile <- synStore(exprFile)
-act <- generatedBy(exprFile)
-
-## CLINICAL FILE
-tcgaCrcClinFile <- file.path(tempdir(), "TCGACRC_clinical.tsv")
-write.table(clinOut, file=tcgaCrcClinFile, sep="\t", quote=FALSE, row.names=FALSE)
-
-clinFile <- File(path=tcgaCrcClinFile, parentId=synFolder)
-generatedBy(clinFile) <- act
-clinFile <- synStore(clinFile)
 ```
 ## QC output
-This resulting tab delimited text files contain expression values on `r nrow(expr)` genes as well as clinical information on `r ncol(expr)-1` samples.
+This resulting tab delimited text file [`r exprFile@properties$name`](#!Synapse:`r exprFile@properties$id`) contain expression values on `r nrow(expr)` genes and `r ncol(expr)-1` samples.
 
 
 .
