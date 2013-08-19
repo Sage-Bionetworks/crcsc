@@ -77,51 +77,51 @@ clinOut <- data.frame(id=clin$bcr_patient_barcode,
                       erbb2Status = clin$"ERBB2:mutation")
 ```
 ### Age Distribution
-```{r age, include=FALSE, fig.height=4, fig.width=6}
+```{r age, echo=FALSE, fig.height=4, fig.width=6}
 ggplot(data=clinOut) + geom_density(aes(x=age), fill="blue", alpha=0.5)
 ```
 ### Gender
-```{r gender, include=FALSE, results='asis'}
+```{r gender, echo=FALSE, results='asis'}
 synTable(table(clinOut$gender))
 ```
 ### Tumor Stage
-```{r stage, include=FALSE, results='asis'}
+```{r stage, echo=FALSE, results='asis'}
 synTable(table(clinOut$stage))
 synTable(table(clinOut$tStage))
 synTable(table(clinOut$nStage))
 synTable(table(clinOut$mStage))
 ```
 ### Tumor Location
-```{r location, include=FALSE, results='asis'}
+```{r location, echo=FALSE, results='asis'}
 synTable(table(clinOut$tumorLocation))
 ```
 ### MSI
-```{r stage, include=FALSE, results='asis'}
+```{r msi, echo=FALSE, results='asis'}
 synTable(table(clinOut$microsatelite))
 ```
 ### Mutation Status
 #### KRAS
-```{r kras, include=FALSE, results='asis'}
+```{r kras, echo=FALSE, results='asis'}
 synTable(table(clinOut$krasStatus))
 ```
 #### BRAF
-```{r braf, include=FALSE, results='asis'}
+```{r braf, echo=FALSE, results='asis'}
 synTable(table(clinOut$brafStatus))
 ```
 #### NRAS
-```{r nras, include=FALSE, results='asis'}
+```{r nras, echo=FALSE, results='asis'}
 synTable(table(clinOut$nrasStatus))
 ```
 #### EGFR
-```{r egfr, include=FALSE, results='asis'}
+```{r egfr, echo=FALSE, results='asis'}
 synTable(table(clinOut$egfrStatus))
 ```
 #### ALK
-```{r alk, include=FALSE, results='asis'}
+```{r alk, echo=FALSE, results='asis'}
 synTable(table(clinOut$alkStatus))
 ```
 #### ERBB2
-```{r erbb2, include=FALSE, results='asis'}
+```{r erbb2, echo=FALSE, results='asis'}
 synTable(table(clinOut$erbb2Status))
 ```
 ```{r saveData, include=FALSE}
