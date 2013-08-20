@@ -15,7 +15,7 @@ require(hgu133plus2.db)
 
 ## GET THE LOCATION OF THIS FILE ON GITHUB
 crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
-rmdUrl <- getPermlink(crcscRepo, "dataQc/kfsyscc.Rmd")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/kfsysccExpression.Rmd")
 
 ## CONVENIENCE FUNCTION FOR SVD EVALUATIONS
 fs <- function(x){
@@ -43,7 +43,7 @@ pData(kfExpr) <- data.frame(scanDate=scanDate)
 
 
 ## ORDER SAMPLES IN CHRONOLOGICAL ORDER OF SCAN DATE
-kfRaw <- kfRaw[, order(pData(kfRaw)$scanDate)]
+kfRaw <- kfExpr[, order(pData(kfExpr)$scanDate)]
 
 ## PERFORM SOME PRELIMINARY QC
 pset <- fitPLM(kfRaw)
