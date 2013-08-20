@@ -37,16 +37,9 @@ theseFiles <- list.celfiles(kfDir, recursive=T, full.names=T)
 ## READ IN CEL FILES
 kfExpr <- ReadAffy(filenames=theseFiles)
 
-## READ IN THE CLINICAL DATA
-clinFile <- synGet("syn2025168")
-kfClin <- read.delim(getFileLocation(clinFile), as.is=T)
-
-stopifnot(all(sapply(strsplit(sampleNames(kfExpr), ".", fixed=T), "[[", 1) == kfClin$SN))
-rownames(kfClin) <- sampleNames(kfExpr)
-kfClin$scanDate <- protocolData(kfExpr)$ScanDate
-kfClin$scanDate <- chron(gsub(" .*", "", kfClin$scanDate))
-pData(kfExpr) <- kfClin
-kfRaw <- kfExpr
+scanDate <- protocolData(kfExpr)$ScanDate
+scanDate <- chron(gsub(" .*", "", scanDate))
+pData(kfExpr) <- data.frame(scanDate=scanDate)
 
 
 ## ORDER SAMPLES IN CHRONOLOGICAL ORDER OF SCAN DATE
@@ -55,9 +48,6 @@ kfRaw <- kfRaw[, order(pData(kfRaw)$scanDate)]
 ## PERFORM SOME PRELIMINARY QC
 pset <- fitPLM(kfRaw)
 ```
-## Overview of the KFSYSCC data
-KFSYSCC generously provided `r length(theseFiles)` CRC samples with expression profiling on the Affymetrix U133 Plus 2 platform.
-
 ## Initial assessment of expression data
 These samples were QCed initially using the `affyPLM` package. The following plot shows the Relative Log Expression (RLE) and Normalized Unscaled Standard Errors (NUSE) plots for all samples. Given the high NUSE for samples processed before 01/01/2007, those `r sum(pData(kfRaw)$scanDate <= "01/01/07")` samples were removed from all further analyses.
 ```{r plmPlots, echo=FALSE, fig.height=10, fig.width=6}
