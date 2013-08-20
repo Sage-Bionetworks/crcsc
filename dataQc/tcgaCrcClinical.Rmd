@@ -1,6 +1,6 @@
 ##! TCGA CRC Clinical Data
 
-This wiki summarizes the clinical data for patients which have RNA-seq data available and QCed in this project. The resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
+This wiki summarizes the clinical data for patients which have RNA-seq data available and QCed in this project.
 
 ${toc}
 ```{r loadData, include=FALSE}
@@ -69,71 +69,61 @@ clinOut <- data.frame(id=clin$bcr_patient_barcode,
                       batch=NA,
                       microsatelite=clin$mononucleotide_and_dinucleotide_marker_panel_analysis_status,
                       cimp=NA,
-                      adjChemo=NA,
-                      krasStatus = clin$"KRAS:mutation",
-                      brafStatus = clin$"BRAF:mutation",
-                      alkStatus = clin$"ALK:mutation",
-                      egfrStatus = clin$"EGFR:mutation",
-                      nrasStatus = clin$"NRAS:mutation",
-                      erbb2Status = clin$"ERBB2:mutation")
+                      adjChemo=NA)
 ```
 ## Age Distribution
 ```{r age, echo=FALSE, fig.height=5, fig.width=8}
 ggplot(data=clinOut) + geom_density(aes(x=age), fill="blue", alpha=0.5)
 ```
 ## Gender
-```{r gender, echo=FALSE, results='asis'}
-synTable(table(clinOut$gender))
+```{r gender, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=gender)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ## Tumor Stage
 ####! Overall
-```{r stage, echo=FALSE, results='asis'}
-synTable(table(clinOut$stage))
+```{r stage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=stage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ####! T Stage
-```{r tstage, echo=FALSE, results='asis'}
-synTable(table(clinOut$tStage))
+```{r tstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ####! N Stage
-```{r nstage, echo=FALSE, results='asis'}
-synTable(table(clinOut$nStage))
+```{r nstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=nStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ####! M Stage
-```{r mstage, echo=FALSE, results='asis'}
-synTable(table(clinOut$mStage))
+```{r mstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=mStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ## Tumor Location
-```{r location, echo=FALSE, results='asis'}
-synTable(table(clinOut$tumorLocation))
+```{r location, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tumorLocation)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ## MSI
-```{r msi, echo=FALSE, results='asis'}
-synTable(table(clinOut$microsatelite))
-```
-## Mutation Status
-####! KRAS
-```{r kras, echo=FALSE, results='asis'}
-synTable(table(clinOut$krasStatus))
-```
-####! BRAF
-```{r braf, echo=FALSE, results='asis'}
-synTable(table(clinOut$brafStatus))
-```
-####! NRAS
-```{r nras, echo=FALSE, results='asis'}
-synTable(table(clinOut$nrasStatus))
-```
-####! EGFR
-```{r egfr, echo=FALSE, results='asis'}
-synTable(table(clinOut$egfrStatus))
-```
-####! ALK
-```{r alk, echo=FALSE, results='asis'}
-synTable(table(clinOut$alkStatus))
-```
-####! ERBB2
-```{r erbb2, echo=FALSE, results='asis'}
-synTable(table(clinOut$erbb2Status))
+```{r msi, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=microsatelite)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
 ```
 ```{r saveData, include=FALSE}
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
@@ -148,6 +138,6 @@ clinFile <- File(path=tcgaCrcClinFile, parentId=synFolder)
 generatedBy(clinFile) <- act
 clinFile <- synStore(clinFile)
 ```
-
+The resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
 
 .
