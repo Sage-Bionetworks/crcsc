@@ -39,7 +39,7 @@ kfExpr <- ReadAffy(filenames=theseFiles)
 
 scanDate <- protocolData(kfExpr)$ScanDate
 scanDate <- chron(gsub(" .*", "", scanDate))
-pData(kfExpr) <- data.frame(scanDate=scanDate)
+pData(kfExpr) <- data.frame(scanDate=scanDate, row.names=sampleNames(kfExpr))
 
 
 ## ORDER SAMPLES IN CHRONOLOGICAL ORDER OF SCAN DATE
@@ -67,7 +67,8 @@ s <- fs(expr)
 ```
 ## First pass normalization
 We then ran `rma` on the resulting `r ncol(expr)` samples which consolidates the feature space down to `r nrow(expr)` probesets. Singular Value Decomposition (SVD) was performed on the entire resulting expression matrix to assess its structure.
-```{r rawSvd, echo=FALSE}
+
+```{r rawSvd, echo=FALSE, fig.height=5, fig.width=7}
 qplot(1:length(s$d), s$d,
       xlab="eigen gene",
       ylab="% variance explained")
