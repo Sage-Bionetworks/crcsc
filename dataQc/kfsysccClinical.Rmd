@@ -1,0 +1,133 @@
+```{r loadData, include=FALSE}
+## FUNCTIONS TO EXTRACT DATA OBJECTS FROM SYNAPSE AND CURATE CLINICAL INFO
+#####
+## ANALYST: BRIAN M. BOT
+#####
+options(stringsAsFactors=FALSE)
+require(synapseClient)
+require(rGithubClient)
+require(ggplot2)
+
+## GET THE LOCATION OF THIS FILE ON GITHUB
+crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/kfsysccClinical.Rmd")
+
+## SYNAPSE FOLDER
+synFolder <- "syn2171230"
+
+kfExprSyn <- synGet("syn2169565")
+kfExprHead <- read.delim(kfExprSyn@filePath, header=F, as.is=TRUE, nrows=1)
+
+thesePatients <- as.character(kfExprHead[1, -1])
+
+## GRAB THE CLINICAL DATA
+## READ IN THE CLINICAL DATA
+clinSyn <- synGet("syn2025168")
+clin <- read.delim(getFileLocation(clinSyn), as.is=T, na.strings=c(" ", "NA", ""))
+rownames(clin) <- paste(clin$SN, "CEL", sep=".")
+
+## SUBSET TO COHORT OF INTEREST
+clin <- clin[thesePatients, ]
+clin$osStat <- ifelse(clin$Death == 0 | is.na(clin$Death), 0, 1)
+clin$osMo <- clin$FT
+# clin$dfsStat <- ifelse(clin$Relap_M == 0 | is.na(clin$Relap_M), 0, 1)
+# clin$dfsMo <- clin$MET
+# clin$dfsStat[ clin$dfsStat==0 & clin$osStat==1 ] <- 1
+# clin$dfsMo[ clin$dfsStat==0 & clin$osStat==1 ] <- clin$osMo[ clin$dfsStat==0 & clin$osStat==1 ]
+
+
+clinOut <- data.frame(id=rownames(clin),
+                      age=clin$AGE,
+                      gender=NA,
+                      stage=gsub(" ", "", clin$Stage),
+                      tStage=as.character(clin$StageT),
+                      mStage=as.character(clin$StageM),
+                      nStage=as.character(clin$StageN),
+                      tumorLocation=ifelse(clin$Site==1, "Ascending", ifelse(clin$Site==2, "Transverse", ifelse(clin$Site==3, "Descending", ifelse(clin$Site==4, "Recto-sigmoid", NA)))),
+                      dfsMo=NA,
+                      dfsStat=NA,
+                      osMo=clin$osMo,
+                      osStat=clin$osStat,
+                      batch=NA,
+                      microsatelite=NA,
+                      cimp=NA,
+                      adjChemo=NA,
+                      krasCodon12=clin$KRAS_Codon12,
+                      krasCodon13=clin$KRAS_Codon13)
+
+## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
+act <- Activity(name="Clinical curation knitr script", used=list(kfExprSyn, clinSyn, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- synStore(act)
+
+## CLINICAL FILE
+kfClinFile <- file.path(tempdir(), "KFSYSCC_clinical.tsv")
+write.table(clinOut, file=kfClinFile, sep="\t", quote=FALSE, row.names=FALSE)
+
+clinFile <- File(path=kfClinFile, parentId=synFolder)
+generatedBy(clinFile) <- act
+clinFile <- synStore(clinFile)
+```
+##! KFSYSCC Clinical Data
+
+This wiki summarizes the clinical data for patients which have expression data available and QCed in this project. The resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
+
+${toc}
+
+
+## Age Distribution
+```{r age, echo=FALSE, fig.height=5, fig.width=8}
+ggplot(data=clinOut) + geom_density(aes(x=age), fill="blue", alpha=0.5)
+```
+## Tumor Stage
+####! Overall
+```{r stage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=stage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! T Stage
+```{r tstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! N Stage
+```{r nstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=nStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! M Stage
+```{r mstage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=mStage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## Tumor Location
+```{r location, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tumorLocation)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## KRAS
+####! Codon 12
+```{r krasCodon12, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=krasCodon12)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! Codon 13
+```{r krasCodon13, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=krasCodon13)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+
+.
