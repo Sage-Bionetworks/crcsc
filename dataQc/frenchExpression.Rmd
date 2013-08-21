@@ -1,4 +1,4 @@
-```{r loadData, echo=FALSE}
+```{r loadData, include=FALSE}
 options(stringsAsFactors=FALSE)
 require(synapseClient)
 require(rGithubClient)
