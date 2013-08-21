@@ -19,6 +19,8 @@ fs <- function(x){
   return(u)
 }
 
+synFolder <- "syn2019116"
+
 gseAll <- getGEO("GSE39582", GSEMatrix=TRUE)
 gseSet <- combine(gseAll[[1]], gseAll[[2]])
 gseSet <- combine(gseSet, gseAll[[3]])
