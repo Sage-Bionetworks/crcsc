@@ -25,7 +25,7 @@ fs <- function(x){
   return(u)
 }
 
-synFolder <- "syn2025137"
+synFolder <- "syn2019114"
 
 ## GRAB THE TAR FILE - UNTAR IN TEMP DIRECTORY
 kfEnt <- synGet("syn2025141")
