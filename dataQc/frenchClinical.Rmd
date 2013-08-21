@@ -1,0 +1,166 @@
+```{r loadData, echo=FALSE}
+options(stringsAsFactors=FALSE)
+require(synapseClient)
+require(rGithubClient)
+require(Biobase)
+require(GEOquery)
+require(ggplot2)
+
+## GET THE LOCATION OF THIS FILE ON GITHUB
+crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/frenchClinical.Rmd")
+
+gseAll <- getGEO("GSE39582", GSEMatrix=TRUE)
+gseSet <- combine(gseAll[[1]], gseAll[[2]])
+gseSet <- combine(gseSet, gseAll[[3]])
+
+clin <- pData(gseSet)
+
+## PARSE THE CLINICAL DATA
+newClin <- data.frame(row.names=rownames(clin))
+theseCols <- grep("characteristic", names(clin), value=TRUE)
+p <- lapply(as.list(theseCols), function(x){
+  strsplit(as.character(clin[, x]), ": ", fixed=T)
+})
+for( i in 1:length(p) ){
+  thisVar <- unique(sapply(p[[i]], "[[", 1))
+  newClin[, thisVar] <- sapply(p[[i]], "[[", 2)
+}
+
+clinOut <- data.frame(id=rownames(newClin),
+                      dataset=newClin$dataset,
+                      age=floor(as.numeric(newClin$age.at.diagnosis)),
+                      gender=newClin$Sex,
+                      stage=newClin$tnm.stage,
+                      tStage=NA,
+                      nStage=NA,
+                      mStage=NA,
+                      tumorLocation=newClin$tumor.location,
+                      dfsMo=NA,
+                      dfsStat=NA,
+                      osMo=NA,
+                      osStat=NA,
+                      batch=newClin$normalizationcombatbatch,
+                      microsatelite=newClin$mmr.status,
+                      cimp=NA,
+                      adjChemo=newClin$chemotherapy.adjuvant,
+                      krasStatus=newClin$kras.mutation.status,
+                      krasProtein=newClin$kras.mutation.protein,
+                      brafStatus=newClin$braf.mutation.status,
+                      brafProtein=newClin$braf.mutation.protein,
+                      tp53Status=newClin$tp53.mutation.status,
+                      tp53Protein=newClin$tp53.mutation.protein)
+
+## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
+act <- Activity(name="Clinical curation knitr script", used=list(list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- synStore(act)
+
+## CLINICAL FILE
+fClinFile <- file.path(tempdir(), "FRENCH_clinical.tsv")
+write.table(clinOut, file=fClinFile, sep="\t", quote=FALSE, row.names=FALSE)
+
+clinFile <- File(path=fClinFile, parentId=synFolder)
+generatedBy(clinFile) <- act
+clinFile <- synStore(clinFile)
+```
+##! FRENCH Clinical Data
+
+This wiki summarizes the clinical data for patients which have expression data available and QCed in this project. The resulting tab delimited text file [`r clinFile@properties$name`](#!Synapse:`r clinFile@properties$id`) contains clinical information on these `r nrow(clinOut)` samples.
+
+${toc}
+
+
+## Dataset
+```{r dataset, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=dataset)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## Age Distribution
+```{r age, echo=FALSE, fig.height=5, fig.width=12}
+ggplot(data=clinOut) + geom_density(aes(x=age), fill="blue", alpha=0.5)
+```
+## Gender
+```{r gender, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=gender)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## Tumor Stage
+```{r stage, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=stage)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## Tumor Location
+```{r location, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tumorLocation)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## MSI
+```{r msi, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=microsatelite)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## Adjuvent Chemotherapy
+```{r chemo, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=adjChemo)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## KRAS
+####! Mutation Status
+```{r krasStatus, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=krasStatus)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! Protein
+```{r krasProtein, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=krasProtein)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## BRAF
+####! Mutation Status
+```{r brafStatus, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=brafStatus)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! Protein
+```{r brafProtein, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=brafProtein)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+## tp53
+####! Mutation Status
+```{r tp53Status, echo=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tp53Status)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+####! Protein
+######! too many different protein locations to graphically display
+```{r tp53Protein, include=FALSE, fig.height=5, fig.width=6}
+ggplot(data=clinOut, aes(x=factor(1), fill=tp53Protein)) + 
+  geom_bar(width=1) + 
+  coord_polar(theta="y") +
+  xlab('') + ylab('')
+```
+
+.

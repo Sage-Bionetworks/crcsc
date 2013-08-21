@@ -1,0 +1,61 @@
+```{r loadData, echo=FALSE}
+options(stringsAsFactors=FALSE)
+require(synapseClient)
+require(rGithubClient)
+require(Biobase)
+require(GEOquery)
+require(corpcor)
+require(ggplot2)
+
+## GET THE LOCATION OF THIS FILE ON GITHUB
+crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
+rmdUrl <- getPermlink(crcscRepo, "dataQc/frenchExpression.Rmd")
+
+## CONVENIENCE FUNCTION FOR SVD EVALUATIONS
+fs <- function(x){
+  require(corpcor)
+  u <- fast.svd(t(scale(t(x), scale = FALSE)), tol = 0)
+  u$d <- u$d^2/sum(u$d^2)
+  return(u)
+}
+
+gseAll <- getGEO("GSE39582", GSEMatrix=TRUE)
+gseSet <- combine(gseAll[[1]], gseAll[[2]])
+gseSet <- combine(gseSet, gseAll[[3]])
+
+expr <- exprs(gseSet)
+s <- fs(expr)
+```
+## FRENCH Expression Data
+These data were taken directly from GEO GSE39582 and not normalized or transformed further. Singular Value Decomposition (SVD) was performed on the entire expression matrix to assess its structure.
+
+```{r rawSvd, echo=FALSE, fig.height=5, fig.width=7}
+qplot(1:length(s$d), s$d,
+      xlab="eigen gene",
+      ylab="% variance explained")
+qplot(s$v[, 1], s$v[, 2],
+      xlab="1st svd",
+      ylab="2nd svd")
+```
+```{r saveObject, include=FALSE}
+## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
+act <- Activity(name="QC knitr script", used=list(list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- synStore(act)
+
+## EXPRESSION FILE
+expr <- as.data.frame(expr)
+tmpNames <- colnames(expr)
+expr$feature <- rownames(expr)
+expr <- expr[, c("feature", tmpNames)]
+fExprFile <- file.path(tempdir(), "FRENCH_expression.tsv")
+write.table(expr, file=fExprFile, sep="\t", quote=FALSE, row.names=FALSE)
+
+exprFile <- File(path=fExprFile, parentId=synFolder)
+generatedBy(exprFile) <- act
+exprFile <- synStore(exprFile)
+```
+## QC output
+The resulting tab delimited text files contain expression values on `r nrow(expr)` genes and `r ncol(expr)-1` samples.
+
+
+.
