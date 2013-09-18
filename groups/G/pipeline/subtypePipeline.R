@@ -107,6 +107,7 @@ predList <- lapply(mExprList, function(eset){
 
 synResultDir <- "syn2229267"
 groupName <- "GroupG"
+trainSynId <- experimentData(allData[["kfsyscc"]])@name
 
 lapply(names(predList), function(datasetName){
   tmp <- round(predList[[datasetName]],digits=4)
