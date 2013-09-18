@@ -1,6 +1,7 @@
 library(synapseClient)
 library(rGithubClient)
 library(affy)
+library(pamr)
 library(hgu133plus2.db)
 library(hgu133a2.db)
 library(org.Hs.eg.db)
