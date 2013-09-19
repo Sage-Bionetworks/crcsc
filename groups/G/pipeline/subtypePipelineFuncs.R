@@ -1,4 +1,3 @@
-
 u133plus2Map <- function(probeIds){mget(probeIds,hgu133plus2ENTREZID,ifnotfound=NA) }
 u133a2Map <- function(probeIds){mget(probeIds,hgu133a2ENTREZID,ifnotfound=NA) }
 symbolMap <- function(probeIds){mget(probeIds,org.Hs.egSYMBOL2EG,ifnotfound=NA) }
@@ -49,11 +48,8 @@ fastLoad <- function(synId,sep="\t",...){
   if(grepl(".*gz$",file)){ con <- gzfile(file)
   }else if(grepl(".*zip$",file)){ con <- unz(file,...)
   }else{ con <- open(file)}
+  
   tmp <- read.table(con, sep=sep,nrows=1)
- 
-  if(grepl(".*gz$",file)){ con <- gzfile(file)
-  }else if(grepl(".*zip$",file)){ con <- unz(file,...)
-  }else{ con <- open(file)}
   
   ncolumns <- length(tmp)
   colClasses <- c("character", rep("numeric",ncolumns-1))
