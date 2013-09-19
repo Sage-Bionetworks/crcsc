@@ -1,10 +1,17 @@
 library(synapseClient)
+library(rGithubClient)
 library(affy)
+library(pamr)
 library(hgu133plus2.db)
 library(hgu133a2.db)
 library(org.Hs.eg.db)
-source("JGLibrary.R")
-source("subtypePipelineFuncs.R")
+
+crcRepo <- getRepo("Sage-Bionetworks/crcsc")
+sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
+code1 <- getPermlink(crcRepo, "groups/G/pipeline/JGLibrary.R")
+sourceRepoFile(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
+code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
+thisScript <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipeline.R")
 
 # password will be request after calling this
 synapseLogin("justin.guinney@sagebase.org")
@@ -107,6 +114,7 @@ predList <- lapply(mExprList, function(eset){
 
 synResultDir <- "syn2229267"
 groupName <- "GroupG"
+trainSynId <- experimentData(allData[["kfsyscc"]])@name
 
 lapply(names(predList), function(datasetName){
   tmp <- round(predList[[datasetName]],digits=4)
@@ -118,6 +126,10 @@ lapply(names(predList), function(datasetName){
   
   # store results in synapse 
   synFile  <- File(path=filePath, parentId=synResultDir)
-  synFile  <- synStore(synFile)
+  synFile  <- synStore(synFile, used=list(list(entity=trainSynId, wasExecuted=F),
+                                          list(entity=synId, wasExecuted=F),
+                                          list(url=code1, name=basename(code1), wasExecuted=F),
+                                          list(url=code2, name=basename(code2), wasExecuted=F),
+                                          list(url=thisScript, name=basename(thisScript), wasExecuted=T)))
   unlink(filePath)
 })
