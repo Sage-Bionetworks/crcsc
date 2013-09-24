@@ -13,7 +13,7 @@
 ##' signature IDs will be kept.
 ##' @return a named list with the signatures
 ##' @author Andreas Schlicker
-signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol"), mapping=NULL) {
+signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol", "entrez"), mapping=NULL) {
 	which = match.arg(which)
 	type = match.arg(type)
 	
@@ -33,6 +33,14 @@ signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", 
 			res = list("1.1"=inmf.clust1.1.sym, "1.2"=inmf.clust1.2.sym, "1.3"=inmf.clust1.3.sym)
 		} else if (which == "step2.c2") {
 			res = list("2.1"=inmf.clust2.1.sym, "2.2"=inmf.clust2.2.sym)
+		}
+	} else if (type == "entrez") {
+		if (which == "step1") {
+			res = list("1"=inmf.clust1.entrez, "2"=inmf.clust2.entrez)
+		} else if (which == "step2.c1") {
+			res = list("1.1"=inmf.clust1.1.entrez, "1.2"=inmf.clust1.2.entrez, "1.3"=inmf.clust1.3.entrez)
+		} else if (which == "step2.c2") {
+			res = list("2.1"=inmf.clust2.1.entrez, "2.2"=inmf.clust2.2.entrez)
 		}
 	}
 	
@@ -201,7 +209,7 @@ createHeatmap = function(exprs, clustering, signatures) {
 ##' saved in files
 ##' @param directory path to the directory where heatmaps will be saved
 ##' @param filePrefix file name prefix for the heatmap files
-##' @return
+##' @return a named list with the clustering results
 ##' @author Andreas Schlicker
 iNMF = function(exprs, signatures, bootstrap=FALSE, silhouette=TRUE, plotHeatmaps=TRUE, directory=".", filePrefix="") {
 	if (bootstrap) {
