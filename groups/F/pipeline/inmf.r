@@ -77,24 +77,78 @@ signaturesList = function(allIds, type=c("ps", "symbol"), mapping=NULL) {
 		 step2.c2 = filterSignatures(signatureList("step2.c2", type, mapping), allIds))
 }
 
-##' Assigns the correct cluster ID to the group of samples. 
-##' Computes the average expression value for each signature and
-##' returns the name of the signature with the largest value as
-##' cluster name. The function assumes that all samples and features
-##' are contained in the expression matrix. Missing values will be
-##' ignored.
-##' @param samples a vector with samples names
+##' Map sample clusters to the correct subtype.  
+##' Computes the average expression value for each sample cluster and each signature.
+##' Then iteratively assigns subtype IDs to the clusters starting with the cluster
+##' with the highest certainty for a given subtype. 
+##' The function assumes that all samples and features are contained in the expression 
+##' matrix. Missing values will be ignored.
+##' @param samples named list with sample clusters
 ##' @param named list of signatures
 ##' @param exprs expresssion matrix with samples in columns and features in rows
-##' @return the name of the signature with maximum average expression
+##' @return the mapping between cluster ID and subtype label
 ##' @author Andreas Schlicker
 assignClusterId = function(samples, signatures, exprs) {
-	means = sapply(signatures, function(x) { median(exprs[x, samples],
-						na.rm=TRUE) })
-	if (length(means) > 1) {
-		warning("Two subtypes have the same mean expression value. Assigning the first one!")
+	# Calculated mean expression for each sample cluster and each signature
+	means = sapply(samples, function(samp) { sapply(signatures, function(x) { mean(exprs[x, samp], na.rm=TRUE) }) }, simplify=TRUE)
+	# To each subtype, assign the cluster with the largest mean expression
+	mapping = apply(means, 1, function(x) { names(x)[which(x == max(x))] })
+	
+	# Check whether one cluster was assigned more than once
+	repeated = names(table(mapping))[table(mapping) > 1]
+	if (length(repeated) > 0) {
+		# Get the missing cluster ID
+		missing = setdiff(names(samples), unique(mapping))
+		# Get the submatrix with mean values
+		sub.mat = means[names(mapping)[which(mapping == repeated)], c(repeated, missing)]
+		# Clear the mapping with the repeated cluster
+		mapping[names(mapping)[which(mapping == repeated)]] = NA
+		# For each subtype without assignment, calculate the difference in mean expression
+		diff = apply(sub.mat, 1, function(x) { abs(x[1] - x[2]) })
+		# The subtype with the largest difference in mean expression
+		temp = names(diff)[diff==max(diff)]
+		# Assign the cluster with the largest mean expression to this subtype
+		mapping[temp] = names(means[temp, ])[means[temp, ] == max(means[temp, ])]
+		# Assign the missing cluster to the subtype without mapping
+		mapping[is.na(mapping)] = setdiff(names(samples), mapping)
 	}
-	names(means)[which(means == max(means))][1]
+	# Reverse the mapping between subtype and cluster ID
+	res = names(mapping)
+	names(res) = mapping
+	
+	res
+	
+#	# Calculate mean expression for each cluster and subtype signature
+#	means = lapply(samples, function(samp) { sapply(signatures, function(x) { mean(exprs[x, samp], na.rm=TRUE) }) })
+#	
+#	# Calculate the margin for each cluster. The margin is defined as the difference between 
+#	# highest average signature expression and second highest expression. The larger the margin
+#	# is, the more certain are we that this is the right subtype.
+#	margin = sapply(means, function(x) { sort(x, decreasing=TRUE)[1] - sort(x, decreasing=TRUE)[2]})
+#	names(margin) = names(means)
+#	
+#	# Build the cluster to subtype ID mapping
+#	mapping = rep(NA, times=length(signatures))
+#	names(mapping) = names(signatures)
+#	# Go through all clusters starting with the one with highest margin
+#	for (n in names(sort(margin, decreasing=TRUE))) {
+#		# Cycle through all subtypes in the order of the mean expression
+#		for (subtype in names(sort(means[[n]], decreasing=TRUE))) {
+#			# If we didn't assign that subtype label to any cluster yet, do it.
+#			# If there is already a cluster ID, some other cluster had a higher certainty.
+#			if (is.na(mapping[subtype])) {
+#				mapping[subtype] = n
+#				break
+#			}
+#		}
+#	}
+#	
+#	# Have to reverse mapping of subtype label to cluster ID
+#	res = names(mapping)
+#	names(res) = mapping
+#	
+#	# And we return the mapping between cluster ID and subtype label
+#	res
 }
 
 ##' Performs one step of the iNMF clustering. Essentially, this is a 
@@ -126,16 +180,28 @@ subtype = function(exprs, signatures, samples=NULL, silhouette=TRUE) {
 	
 	clustering = cutree(hclust(as.dist(dist.mat), method="complete"), k=length(signatures))
 	
-	res = list()
-	idMap = list()
+	clust.list = list()
 	for (i in unique(clustering)) {
-		samps = names(clustering[clustering == i])
-		cId = assignClusterId(samps, signatures, exprs)
-		if (length(intersect(names(res), cId)) > 0) {
-			warning(paste("Cluster ID ", cId, " was assigned more than once!"))
-		}
-		res[[cId]] = samps
-		idMap[[as.character(i)]] = cId
+		clust.list[[as.character(i)]] = names(clustering[clustering == i])	
+	}
+	
+	idMap = assignClusterId(clust.list, signatures, exprs)
+	
+#	res = list()
+#	idMap = list()
+#	for (i in unique(clustering)) {
+#		samps = names(clustering[clustering == i])
+#		cId = assignClusterId(samps, signatures, exprs)
+#		if (length(intersect(names(res), cId)) > 0) {
+#			warning(paste("Cluster ID ", cId, " was assigned more than once!"))
+#		}
+#		res[[cId]] = samps
+#		idMap[[as.character(i)]] = cId
+#	}
+	
+	res = list()
+	for (n in names(clust.list)) {
+		res[[idMap[n]]] = clust.list[[n]]
 	}
 	
 	sil = NULL
@@ -214,6 +280,8 @@ createHeatmap = function(exprs, clustering, signatures) {
 iNMF = function(exprs, signatures, bootstrap=FALSE, silhouette=TRUE, plotHeatmaps=TRUE, directory=".", filePrefix="") {
 	if (bootstrap) {
 		samples = sample(colnames(exprs), ncol(exprs), TRUE)
+	} else {
+		samples = colnames(exprs)
 	}
 	
 	clust1 = subtype(exprs, signatures$step1, samples, silhouette)
@@ -252,7 +320,7 @@ subtypingMatrix = function(solution, samples=NULL) {
 	if (class(solution) != "list") {
 		print(solution)
 		print(class(solution))
-		return()
+		return(matrix(0, ncol=5, nrow=length(samples)))
 	}
 	combined = c(solution$step2.c1$clustering,
 				 solution$step2.c2$clustering)
@@ -266,6 +334,31 @@ subtypingMatrix = function(solution, samples=NULL) {
 	for (n in names(combined)) {
 		tab = table(combined[[n]])
 		mat[names(tab), n] = mat[names(tab), n] + tab
+	}
+	
+	mat
+}
+
+coClustering = function(solution, samples=NULL) {
+	if (class(solution) != "list") {
+		print(solution)
+		print(class(solution))
+		return(matrix(0, ncol=length(samples), nrow=length(samples)))
+	}
+	combined = c(solution$step2.c1$clustering,
+				 solution$step2.c2$clustering)
+	if (is.null(samples)) {
+		samples = unlist(combined)
+	}
+	mat = matrix(0, ncol=length(samples), nrow=length(samples))
+	colnames(mat) = samples
+	rownames(mat) = samples
+	
+	for (n in names(combined)) {
+		temp.samp = unique(combined[[n]])
+		for (i in temp.samp) {
+			mat[i, temp.samp] = mat[i, temp.samp] + 1
+		}
 	}
 	
 	mat
@@ -322,9 +415,11 @@ bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL
 
 	
 	res = subtypingMatrix(subs[[1]], colnames(exprs))
+	coclust = coClustering(subs[[1]], colnames(exprs))
 	for (i in 2:runs) {
 		res = res + subtypingMatrix(subs[[i]], colnames(exprs))
+		coclust = coclust + coClustering(subs[[i]], colnames(exprs))
 	}
 	
-	res / apply(res, 1, sum)
+	list(subtype.p=res / apply(res, 1, sum), cocluster=coclust / diag(coclust))
 }
