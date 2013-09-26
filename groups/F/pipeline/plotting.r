@@ -167,7 +167,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 ##' @param normalize boolean; if TRUE, normalize each row by the diagonal element
 ##' @return heatmap
 ##' @author Andreas Schlicker
-coOccurrencePlot = function(matrix, normalize=FALSE) {
+cooccurrencePlot = function(matrix, normalize=FALSE) {
 	require(gplots) || stop("Can't load package \"gplots\"")
 	
 	if (normalize) {
