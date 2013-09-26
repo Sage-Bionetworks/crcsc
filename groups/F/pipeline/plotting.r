@@ -72,7 +72,7 @@ probabilityPlot = function(matrix, colors=NULL) {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2PlotDf(matrix)
-	sample.order = orderSamples
+	sample.order = orderSamples(matrix)
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=pvalue, fill=Subtype)) +
 		geom_bar(stat="identity") + 
@@ -82,6 +82,7 @@ probabilityPlot = function(matrix, colors=NULL) {
 		theme(axis.ticks=element_blank(), 
 			  axis.text.x=element_blank(), 
 			  axis.title.x=element_text(size=20, face="bold"),
+			  axis.text.y=element_text(size=16),
 			  axis.title.y=element_text(size=20, face="bold"))
 
 	if (!is.null(colors)) {
@@ -103,7 +104,7 @@ facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2PlotDf(matrix)
-	sample.order = orderSamples
+	sample.order = orderSamples(matrix)
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=pvalue, fill=Subtype)) +
 		geom_bar(stat="identity", position=position_dodge()) +
@@ -115,6 +116,7 @@ facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
 		theme(axis.ticks=element_blank(), 
 			  axis.text.x=element_blank(), 
 			  axis.title.x=element_text(size=20, face="bold"),
+			  axis.text.y=element_text(size=16),
 			  axis.title.y=element_text(size=20, face="bold"),
 			  strip.text=element_text(size=20, face="bold"))
 	
@@ -136,7 +138,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2MarginDf(matrix)
-	sample.order = orderSamples
+	sample.order = orderSamples(matrix)
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=margin, color=Subtype, group=Subtype, shape=Subtype)) +
 		geom_point(size=5) + 
@@ -146,6 +148,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 		theme(axis.ticks=element_blank(), 
 				axis.text.x=element_blank(), 
 				axis.title.x=element_text(size=20, face="bold"),
+				axis.text.y=element_text(size=16),
 				axis.title.y=element_text(size=20, face="bold"))
 
 	if (!is.null(colors)) { 
@@ -158,3 +161,26 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 	p
 }
 
+##' Generate cooccurrence heatmap showing how often two samples end up in the
+##' same subtype. Rows and columns are clustered using Ward's method.
+##' @param matrix cooccurrence matrix. 
+##' @param normalize boolean; if TRUE, normalize each row by the diagonal element
+##' @return heatmap
+##' @author Andreas Schlicker
+cooccurrencePlot = function(matrix, normalize=FALSE) {
+	require(gplots) || stop("Can't load package \"gplots\"")
+	
+	if (normalize) {
+		matrix = matrix / diag(matrix)
+	}
+	
+	heatmap.2(matrix, scale="none", trace="none",
+			  Colv=as.dendrogram(hclust(as.dist(1-matrix), method="ward")),
+			  Rowv=as.dendrogram(hclust(as.dist(1-matrix), method="ward")),
+			  col=colorpanel(49, low="white", high="royalblue4"),
+			  breaks=seq(0, 1, length.out=50),
+			  density.info="none",
+			  labCol="",
+			  labRow=""
+	)
+}
