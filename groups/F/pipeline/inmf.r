@@ -14,29 +14,29 @@ getSig = function(type, subtype, signatures) {
 }
 
 ##' Map iNMF signatures to identifiers used in another data set.
-##' @param which one of "step1", "step2.c1", "step2.c2"
-##' @param type one of "ps", "symbol". "ps" uses Affy HGU133+2 signatures as 
+##' @param step one of "step1", "step2.c1", "step2.c2"
+##' @param type one of "ps", "symbol" or "entrez". "ps" uses Affy HGU133+2 signatures as 
 ##' starting point. "symbol" uses signatures that were already mapped to 
-##' gene symbols. 
+##' gene symbols. "entrez" uses signatures that were previously mapped to Entrez gene IDs.
 ##' @param signatures data frame with all signatures
 ##' @param mapping a matrix mapping data set-specific IDs (first column) to either Affy 
 ##' HGU133+2 probe sets or gene symbols (second column). If NULL (default), the 
 ##' signature IDs will be kept.
 ##' @return a named list with the signatures
 ##' @author Andreas Schlicker
-signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol", "entrez"), signatures, mapping=NULL) {
-	which = match.arg(which)
+signatureList = function(step=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol", "entrez"), signatures, mapping=NULL) {
+	step = match.arg(step)
 	type = match.arg(type)
 	
 	res = list()
-	if (which == "step1") {
+	if (step == "step1") {
 		res[["1"]] = getSig(type, "1", signatures)
 		res[["2"]] = getSig(type, "2", signatures)
-	} else if (which == "step2.c1") {
+	} else if (step == "step2.c1") {
 		res[["1.1"]] = getSig(type, "1.1", signatures)
 		res[["1.2"]] = getSig(type, "1.2", signatures)
 		res[["1.3"]] = getSig(type, "1.3", signatures)
-	} else if (which == "step2.c2") {
+	} else if (step == "step2.c2") {
 		res[["2.1"]] = getSig(type, "2.1", signatures)
 		res[["2.2"]] = getSig(type, "2.2", signatures)
 	}
@@ -60,19 +60,21 @@ filterSignatures = function(signatures, allIds) {
 ##' Prepare a list containing all signatures for the iNMF subtyping. 
 ##' The return value can directly be used as input for the iNMF function.
 ##' @param allIds vector containing all IDs for which expression data is available
-##' @param type one of "ps", "symbol". "ps" uses Affy HGU133+2 signatures as 
+##' @param type one of "ps", "symbol" or "entrez". "ps" uses Affy HGU133+2 signatures as 
 ##' starting point. "symbol" uses signatures that were already mapped to 
-##' gene symbols.
+##' gene symbols. "entrez" uses signatures that were previously mapped to Entrez gene IDs.
 ##' @param signatures data frame with all signatures
 ##' @param mapping a matrix mapping data set-specific IDs (first column) to either Affy 
 ##' HGU133+2 probe sets or gene symbols (second column). If NULL (default), the 
 ##' signature IDs will be kept.
 ##' @return named list with all three signatures
 ##' @author Andreas Schlicker
-signaturesList = function(allIds, type=c("ps", "symbol"), signatures, mapping=NULL) {
-	list(step1= filterSignatures(signatureList("step1", type, mapping), allIds),
-		 step2.c1 = filterSignatures(signatureList("step2.c1", type, mapping), allIds),
-		 step2.c2 = filterSignatures(signatureList("step2.c2", type, mapping), allIds))
+signaturesList = function(allIds, type=c("ps", "symbol", "entrez"), signatures, mapping=NULL) {
+	type = match.arg(type)
+	
+	list(step1= filterSignatures(signatureList("step1", type, signatures, mapping), allIds),
+		 step2.c1 = filterSignatures(signatureList("step2.c1", type, signatures, mapping), allIds),
+		 step2.c2 = filterSignatures(signatureList("step2.c2", type, signatures, mapping), allIds))
 }
 
 ##' Map sample clusters to the correct subtype.  
@@ -115,38 +117,6 @@ assignClusterId = function(samples, signatures, exprs) {
 	names(res) = mapping
 	
 	res
-	
-#	# Calculate mean expression for each cluster and subtype signature
-#	means = lapply(samples, function(samp) { sapply(signatures, function(x) { mean(exprs[x, samp], na.rm=TRUE) }) })
-#	
-#	# Calculate the margin for each cluster. The margin is defined as the difference between 
-#	# highest average signature expression and second highest expression. The larger the margin
-#	# is, the more certain are we that this is the right subtype.
-#	margin = sapply(means, function(x) { sort(x, decreasing=TRUE)[1] - sort(x, decreasing=TRUE)[2]})
-#	names(margin) = names(means)
-#	
-#	# Build the cluster to subtype ID mapping
-#	mapping = rep(NA, times=length(signatures))
-#	names(mapping) = names(signatures)
-#	# Go through all clusters starting with the one with highest margin
-#	for (n in names(sort(margin, decreasing=TRUE))) {
-#		# Cycle through all subtypes in the order of the mean expression
-#		for (subtype in names(sort(means[[n]], decreasing=TRUE))) {
-#			# If we didn't assign that subtype label to any cluster yet, do it.
-#			# If there is already a cluster ID, some other cluster had a higher certainty.
-#			if (is.na(mapping[subtype])) {
-#				mapping[subtype] = n
-#				break
-#			}
-#		}
-#	}
-#	
-#	# Have to reverse mapping of subtype label to cluster ID
-#	res = names(mapping)
-#	names(res) = mapping
-#	
-#	# And we return the mapping between cluster ID and subtype label
-#	res
 }
 
 ##' Performs one step of the iNMF clustering. Essentially, this is a 
