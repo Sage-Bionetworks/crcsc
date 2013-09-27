@@ -161,13 +161,13 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 	p
 }
 
-##' Generate cooccurrence heatmap showing how often two samples end up in the
+##' Generate coclustering heatmap showing how often two samples end up in the
 ##' same subtype. Rows and columns are clustered using Ward's method.
 ##' @param matrix cooccurrence matrix. 
 ##' @param normalize boolean; if TRUE, normalize each row by the diagonal element
 ##' @return heatmap
 ##' @author Andreas Schlicker
-cooccurrencePlot = function(matrix, normalize=FALSE) {
+coclusteringPlot = function(matrix, normalize=FALSE) {
 	require(gplots) || stop("Can't load package \"gplots\"")
 	
 	if (normalize) {
