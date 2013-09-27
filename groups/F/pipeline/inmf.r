@@ -3,45 +3,42 @@
 # Author: Andreas Schlicker (a.schlicker@nki.nl)
 ###############################################################################
 
+##' Extract the given signature from the data frame containing all iNMF signatures.
+##' @param type ID type to be used for the signature, either "ps", "symbol" or "entrez"
+##' @param subtype either "1", "1.1", "1.2", "1.3", "2", "2.1", "2.2"
+##' @param signatures data frame with all signatures
+##' @return vector with all IDs of given type belonging to the requested signature
+##' @author Andreas Schlicker
+getSig = function(type, subtype, signatures) {
+	signatures[which(signatures[, "type"]==type & signatures[, "subtype"]==subtype), "acc"]
+}
+
 ##' Map iNMF signatures to identifiers used in another data set.
 ##' @param which one of "step1", "step2.c1", "step2.c2"
 ##' @param type one of "ps", "symbol". "ps" uses Affy HGU133+2 signatures as 
 ##' starting point. "symbol" uses signatures that were already mapped to 
 ##' gene symbols. 
+##' @param signatures data frame with all signatures
 ##' @param mapping a matrix mapping data set-specific IDs (first column) to either Affy 
 ##' HGU133+2 probe sets or gene symbols (second column). If NULL (default), the 
 ##' signature IDs will be kept.
 ##' @return a named list with the signatures
 ##' @author Andreas Schlicker
-signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol", "entrez"), mapping=NULL) {
+signatureList = function(which=c("step1", "step2.c1", "step2.c2"), type=c("ps", "symbol", "entrez"), signatures, mapping=NULL) {
 	which = match.arg(which)
 	type = match.arg(type)
 	
 	res = list()
-	if (type == "ps") {
-		if (which == "step1") {
-			res = list("1"=inmf.clust1.ps, "2"=inmf.clust2.ps)
-		} else if (which == "step2.c1") {
-			res = list("1.1"=inmf.clust1.1.ps, "1.2"=inmf.clust1.2.ps, "1.3"=inmf.clust1.3.ps)
-		} else if (which == "step2.c2") {
-			res = list("2.1"=inmf.clust2.1.ps, "2.2"=inmf.clust2.2.ps)
-		}
-	} else if (type == "symbol") {
-		if (which == "step1") {
-			res = list("1"=inmf.clust1.sym, "2"=inmf.clust2.sym)
-		} else if (which == "step2.c1") {
-			res = list("1.1"=inmf.clust1.1.sym, "1.2"=inmf.clust1.2.sym, "1.3"=inmf.clust1.3.sym)
-		} else if (which == "step2.c2") {
-			res = list("2.1"=inmf.clust2.1.sym, "2.2"=inmf.clust2.2.sym)
-		}
-	} else if (type == "entrez") {
-		if (which == "step1") {
-			res = list("1"=inmf.clust1.entrez, "2"=inmf.clust2.entrez)
-		} else if (which == "step2.c1") {
-			res = list("1.1"=inmf.clust1.1.entrez, "1.2"=inmf.clust1.2.entrez, "1.3"=inmf.clust1.3.entrez)
-		} else if (which == "step2.c2") {
-			res = list("2.1"=inmf.clust2.1.entrez, "2.2"=inmf.clust2.2.entrez)
-		}
+	if (which == "step1") {
+		res[["1"]] = getSig(type, "1", signatures)
+		res[["2"]] = getSig(type, "2", signatures)
+	} else if (which == "step2.c1") {
+		res[["1.1"]] = getSig(type, "1.1", signatures)
+		res[["1.2"]] = getSig(type, "1.2", signatures)
+		res[["1.3"]] = getSig(type, "1.3", signatures)
+	} else if (which == "step2.c2") {
+		res[["2.1"]] = getSig(type, "2.1", signatures)
+		res[["2.2"]] = getSig(type, "2.2", signatures)
 	}
 	
 	if (!is.null(mapping)) {
@@ -66,12 +63,13 @@ filterSignatures = function(signatures, allIds) {
 ##' @param type one of "ps", "symbol". "ps" uses Affy HGU133+2 signatures as 
 ##' starting point. "symbol" uses signatures that were already mapped to 
 ##' gene symbols.
+##' @param signatures data frame with all signatures
 ##' @param mapping a matrix mapping data set-specific IDs (first column) to either Affy 
 ##' HGU133+2 probe sets or gene symbols (second column). If NULL (default), the 
 ##' signature IDs will be kept.
 ##' @return named list with all three signatures
 ##' @author Andreas Schlicker
-signaturesList = function(allIds, type=c("ps", "symbol"), mapping=NULL) {
+signaturesList = function(allIds, type=c("ps", "symbol"), signatures, mapping=NULL) {
 	list(step1= filterSignatures(signatureList("step1", type, mapping), allIds),
 		 step2.c1 = filterSignatures(signatureList("step2.c1", type, mapping), allIds),
 		 step2.c2 = filterSignatures(signatureList("step2.c2", type, mapping), allIds))
