@@ -82,7 +82,7 @@ probabilityPlot = function(matrix, colors=NULL) {
 		theme(axis.ticks=element_blank(), 
 			  axis.text.x=element_blank(), 
 			  axis.title.x=element_text(size=20, face="bold"),
-			  axis.text.y=element_text(size=16),
+			  axis.text.y=element_text(size=20, face="bold"),
 			  axis.title.y=element_text(size=20, face="bold"))
 
 	if (!is.null(colors)) {
@@ -116,7 +116,7 @@ facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
 		theme(axis.ticks=element_blank(), 
 			  axis.text.x=element_blank(), 
 			  axis.title.x=element_text(size=20, face="bold"),
-			  axis.text.y=element_text(size=16),
+			  axis.text.y=element_text(size=20, face="bold"),
 			  axis.title.y=element_text(size=20, face="bold"),
 			  strip.text=element_text(size=20, face="bold"))
 	
@@ -148,7 +148,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 		theme(axis.ticks=element_blank(), 
 				axis.text.x=element_blank(), 
 				axis.title.x=element_text(size=20, face="bold"),
-				axis.text.y=element_text(size=16),
+				axis.text.y=element_text(size=20, face="bold"),
 				axis.title.y=element_text(size=20, face="bold"))
 
 	if (!is.null(colors)) { 
