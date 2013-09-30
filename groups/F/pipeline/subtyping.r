@@ -53,7 +53,7 @@ publicExprList = list(
 
 
 allResults = list()
-for (n in c(names(coreExprList), names(publicExprList()))) {
+for (n in c(names(coreExprList), names(publicExprList))) {
 	x = coreExprList[[n]]
 	
 	sep = "\t"
