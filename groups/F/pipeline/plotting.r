@@ -152,7 +152,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 				axis.title.y=element_text(size=20, face="bold"))
 
 	if (!is.null(colors)) { 
-		p = p + scale_color_manual(values=cols)
+		p = p + scale_color_manual(values=colors)
 	}
 	if (!is.null(shapes)) { 
 		p = p + scale_shape_manual(values=shapes)
