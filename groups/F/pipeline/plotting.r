@@ -48,7 +48,7 @@ orderSamples = function(matrix) {
 		temp.samp = names(sample.subtype)[sample.subtype == k]
 		n.temp.samp = length(temp.samp)
 
-		if (n.temp.samp > 0){
+		if (n.temp.samp > 1){
 			# Sort according to decreasing probability and get the sample names
 			sample.order[l:(l+n.temp.samp - 1)] = names(matrix[temp.samp, k])[order(matrix[temp.samp, k], decreasing=TRUE)]
 			l = l + n.temp.samp
