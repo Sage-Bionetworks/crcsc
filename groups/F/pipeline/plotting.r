@@ -111,6 +111,7 @@ facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
 		facet_wrap(~ Subtype, ncol=ncol) + 
 		guides(fill=FALSE) +
 		scale_x_discrete(limits=sample.order) +
+		scale_y_continuous(limits = c(0, 1)) +
 		xlab("Samples") + 
 		ylab("Subtyping probability") +
 		theme(axis.ticks=element_blank(), 
@@ -143,6 +144,7 @@ marginPlot = function(matrix, colors=NULL, shapes=NULL) {
 	p = ggplot(plotting.df, aes(x=sample.name, y=margin, color=Subtype, group=Subtype, shape=Subtype)) +
 		geom_point(size=5) + 
 		scale_x_discrete(limits=sample.order) +
+		scale_y_continuous(limits = c(0, 1)) +
 		xlab("Samples") + 
 		ylab("Subtyping margin") +
 		theme(axis.ticks=element_blank(), 
