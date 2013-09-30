@@ -91,66 +91,26 @@ signaturesList = function(allIds, type=c("ps", "symbol", "entrez"), signatures, 
 assignClusterId = function(samples, signatures, exprs) {
 	# Calculated mean expression for each sample cluster and each signature
 	means = sapply(samples, function(samp) { sapply(signatures, function(x) { mean(exprs[x, samp], na.rm=TRUE) }) }, simplify=TRUE)
+	# Calculate the margin for each cluster assignment
 	margin = apply(means, 1, function(x) { sort(x, decreasing=TRUE)[1] - sort(x, decreasing=TRUE)[2] })
 	
+	# Mapping between subtype label and cluster ID
 	mapping = rep("", times=length(names(signatures)))
 	names(mapping) = names(signatures)
+	# All cluster IDs
 	clusts = colnames(means)
+	# Cycle through all subtypes in order of decreasing margin
 	for (n in names(sort(margin, decreasing=TRUE))) {
 		if (length(clusts) > 1) {
+			# There are more than one cluster left
+			# Take one of the subtypes with the largest means
 			mapping[n] = names(which(means[n, clusts] == max(means[n, clusts])))[1]
 			clusts = setdiff(clusts, mapping[n])
 		} else {
+			# Assign the remaining subtype
 			mapping[n] = clusts
 		}
 	}	
-	
-#	# To each subtype, assign the cluster with the largest mean expression
-#	mapping = lapply(rownames(means), function(x) { names(means[x, ])[which(means[x, ] == max(means[x, ]))] })
-#	names(mapping) = rownames(means)
-#	
-#	# How many clusters were assigned to each subtype
-#	len.mapped = lapply(mapping, length)
-#	if (sum(len.mapped > 1) > 1) {
-#		# More than one subtype have more than one cluster assigned.
-#		# That means there are several clusters with the same average expression for each subtype.
-#		# The situations is undecidable! Assign them by index.
-#		ind = names(which(len.mapped > 1))
-#		for (i in 1:length(ind)) {
-#			mapping[[ind[i]]] = mapping[[ind[i]]][i]
-#		}
-#		
-#		mapped = unlist(mapping)[!is.na(unlist(mapping))]
-#		if (length(mapped) < length(signatures)) {
-#			mapping[[which(is.na(mapping))]] = setdiff(colnames(means), mapped)
-#		}
-#	} else if (sum(len.mapped > 1) == 1) {
-#		# There is one subtype which was assigned more than one cluster.
-#		# Check which clusters were unambiguously assigned
-#		assigned.clust = unique(unlist(mapping[names(len.mapped)[len.mapped == 1]]))
-#		# And assign the remaining one here
-#		mapping[[names(len.mapped)[len.mapped > 1]]] = setdiff(colnames(means), assigned.clust)
-#	}
-#	
-#	# Check whether one cluster was assigned more than once
-#	repeated = names(table(mapping))[table(mapping) > 1]
-#	if (length(repeated) > 0) {
-#		# Get the missing cluster ID
-#		missing = setdiff(names(samples), unique(mapping))
-#		# Get the submatrix with mean values
-#		sub.mat = means[names(mapping)[which(mapping == repeated)], c(repeated, missing)]
-#		# Clear the mapping with the repeated cluster
-#		mapping[names(mapping)[which(mapping == repeated)]] = NA
-#		# For each subtype without assignment, calculate the difference in mean expression
-#		diff = apply(sub.mat, 1, function(x) { abs(x[1] - x[2]) })
-#		# The subtype with the largest difference in mean expression
-#		temp = names(diff)[diff==max(diff)]
-#		# Assign the cluster with the largest mean expression to this subtype
-#		mapping[temp] = names(means[temp, ])[means[temp, ] == max(means[temp, ])]
-#		# Assign the missing cluster to the subtype without mapping
-#		mapping[is.na(mapping)] = setdiff(names(samples), mapping)
-#	}
-#	
 	# Reverse the mapping between subtype and cluster ID
 	res = names(mapping)
 	names(res) = mapping
@@ -185,11 +145,8 @@ subtype = function(exprs, signatures, samples=NULL, silhouette=TRUE) {
 	}
 	
 	if (length(samples) == 1) {
-		means = lapply(signatures, function(x) { mean(exprs[x, samples]) })
+		means = unlist(lapply(signatures, function(x) { mean(exprs[x, samples]) }))
 		res = list()
-		for (n in names(signatures)) {
-			res[n] = c()
-		}
 		res[names(means)[which(means == max(means))][1]] = c(samples)
 		return(list(clustering=res))
 	}
@@ -204,19 +161,7 @@ subtype = function(exprs, signatures, samples=NULL, silhouette=TRUE) {
 	}
 	
 	idMap = assignClusterId(clust.list, signatures, exprs)
-	
-#	res = list()
-#	idMap = list()
-#	for (i in unique(clustering)) {
-#		samps = names(clustering[clustering == i])
-#		cId = assignClusterId(samps, signatures, exprs)
-#		if (length(intersect(names(res), cId)) > 0) {
-#			warning(paste("Cluster ID ", cId, " was assigned more than once!"))
-#		}
-#		res[[cId]] = samps
-#		idMap[[as.character(i)]] = cId
-#	}
-	
+
 	res = list()
 	for (n in names(clust.list)) {
 		res[[idMap[n]]] = clust.list[[n]]
