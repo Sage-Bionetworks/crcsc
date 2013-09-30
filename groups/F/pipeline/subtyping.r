@@ -92,7 +92,7 @@ for (n in c(names(coreExprList), names(publicExprList))) {
 	signatures = signaturesList(rownames(data.mat), sig.id, iNMFSignatures, mapping)
 	
 	# Run bootstrapped iNMF subtyping
-	coreResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=1000, procCores=15)
+	allResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=1000, procCores=15)
 }
 
 plotting.cols = c("gray10", "gray40", "gray70", "springgreen4", "springgreen2")
