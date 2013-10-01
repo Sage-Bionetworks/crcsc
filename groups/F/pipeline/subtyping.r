@@ -53,8 +53,8 @@ publicExprList = list(
 
 
 allResults = list()
-for (n in c(names(coreExprList), names(publicExprList))) {
-	x = coreExprList[[n]]
+for (n in c(names(coreExprList), names(publicExprList))[11:23]) {
+	x = publicExprList[[n]]
 	
 	sep = "\t"
 	if (!is.null(x$sep)) {
@@ -106,7 +106,7 @@ for (x in names(allResults)) {
 	print(facetedProbabilityPlot(allResults[[x]][[1]], colors=plotting.cols))
 	dev.off()
 	
-	png(paste(x, "margins.png", sep="_"), width=6000, height=3000, res=300)
+	png(paste(x, "margins_margin.png", sep="_"), width=6000, height=3000, res=300)
 	print(marginPlot(allResults[[x]][[1]], colors=plotting.cols, shapes=plotting.shapes))
 	dev.off()
 	
