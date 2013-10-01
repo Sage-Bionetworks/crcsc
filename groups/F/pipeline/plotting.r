@@ -51,10 +51,12 @@ orderSamples = function(matrix) {
 		if (n.temp.samp > 1){
 			# Sort according to decreasing probability and get the sample names
 			sample.order[l:(l+n.temp.samp - 1)] = names(matrix[temp.samp, k])[order(matrix[temp.samp, k], decreasing=TRUE)]
+			names(sample.order)[l:(l+n.temp.samp - 1)] = k
 			l = l + n.temp.samp
 		} else if (n.temp.samp == 1) {
 			# If we only have one sample, R doesn't preserve the names
 			sample.order[l:(l+n.temp.samp - 1)] = temp.samp
+			names(sample.order)[l:(l+n.temp.samp - 1)] = k
 			l = l + n.temp.samp
 		}
 	}
@@ -66,16 +68,19 @@ orderSamples = function(matrix) {
 ##' @param matrix the subtyping matrix with samples in rows and subtypes
 ##' in columns
 ##' @param colors vector with colors to use; default: NULL
+##' @param line.color color for the line dividing subtypes; default: black
 ##' @return the ggplot2 object
 ##' @author Andreas Schlicker
-probabilityPlot = function(matrix, colors=NULL) {
+probabilityPlot = function(matrix, colors=NULL, line.color="red") {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2PlotDf(matrix)
 	sample.order = orderSamples(matrix)
+	subtype.boundaries = cumsum(table(names(sample.order))) + 0.5
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=pvalue, fill=Subtype)) +
 		geom_bar(stat="identity") + 
+		geom_vline(xintercept=subtype.boundaries[-1*(length(subtype.boundaries))], linetype="longdash", color=line.color) + 
 		scale_x_discrete(limits=sample.order) +
 		xlab("Samples") + 
 		ylab("Subtyping probability") +
@@ -98,17 +103,20 @@ probabilityPlot = function(matrix, colors=NULL) {
 ##' in columns
 ##' @param ncol number of facets to plot per column, default: 1
 ##' @param colors vector with colors to use; default: NULL
+##' @param line.color color for the line dividing subtypes; default: black
 ##' @return the ggplot2 object
 ##' @author Andreas Schlicker
-facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
+facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL, line.color="red") {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2PlotDf(matrix)
 	sample.order = orderSamples(matrix)
+	subtype.boundaries = cumsum(table(names(sample.order))) + 0.5
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=pvalue, fill=Subtype)) +
 		geom_bar(stat="identity", position=position_dodge()) +
 		facet_wrap(~ Subtype, ncol=ncol) + 
+		geom_vline(xintercept=subtype.boundaries[-1*(length(subtype.boundaries))], linetype="longdash", color=line.color) +
 		guides(fill=FALSE) +
 		scale_x_discrete(limits=sample.order) +
 		scale_y_continuous(limits = c(0, 1)) +
@@ -133,18 +141,21 @@ facetedProbabilityPlot = function(matrix, ncol=1, colors=NULL) {
 ##' in columns
 ##' @param colors vector with colors to use; default: NULL
 ##' @param shapes vector with shapes to use; default: NULL
+##' @param line.color color for the line dividing subtypes; default: black
 ##' @return the ggplot2 object
 ##' @author Andreas Schlicker
-marginPlot = function(matrix, colors=NULL, shapes=NULL) {
+marginPlot = function(matrix, colors=NULL, shapes=NULL, line.color="red") {
 	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
 	plotting.df = pMat2MarginDf(matrix)
 	sample.order = orderSamples(matrix)
+	subtype.boundaries = cumsum(table(names(sample.order))) + 0.5
 	
 	p = ggplot(plotting.df, aes(x=sample.name, y=margin, color=Subtype, group=Subtype, shape=Subtype)) +
 		geom_point(size=5) + 
 		scale_x_discrete(limits=sample.order) +
-		scale_y_continuous(limits = c(0, 1)) +
+		scale_y_continuous(limits = c(0, 1)) + 
+		geom_vline(xintercept=subtype.boundaries[-1*(length(subtype.boundaries))], linetype="longdash", color=line.color) +
 		xlab("Samples") + 
 		ylab("Subtyping margin") +
 		theme(axis.ticks=element_blank(), 
