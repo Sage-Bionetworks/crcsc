@@ -27,6 +27,46 @@ pMat2MarginDf = function(matrix) {
 			   sample.name=rownames(matrix))
 }
 
+##' Convert a subtyping matrix into a data frame for a forest plot.
+##' @param matrix the subtyping matrix
+##' @param name the data set name
+##' @return the plotting data frame
+##' @author Andreas Schlicker
+pMat2ForestDf = function(matrix, name) {
+	# Assign samples to subtypes
+	subtypes = apply(matrix, 1, function(x) { names(x)[which(x == max(x))][1] })
+	
+	# Which samples do or do not belong to each subtype?
+	sample2subtype = list()
+	for (n in colnames(matrix)) {
+		sample2subtype[[n]] = names(subtypes)[subtypes == n]
+		sample2subtype[[paste("not.", n, sep="")]] = names(subtypes)[subtypes != n]
+	}
+	
+	# Calculate statistics
+	means = double(length(sample2subtype))
+	stddev = double(length(sample2subtype))
+	for (i in 1:length(means)) {
+		means[i] = mean(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		names(means)[i] = names(sample2subtype)[i]
+		
+		#stddev[i] = means[i] / nrow(matrix)
+		stddev[i] = sd(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		names(stddev)[i] = names(sample2subtype)[i]
+	}
+	
+	# Combine
+	df = data.frame(Dataset=name,
+			 	   	Subtype=names(means),
+			   		Mean=means,
+			   		ymin=sapply(names(means), function(x) { max(0, means[x] - stddev[x]) }),
+			   		ymax=sapply(names(means), function(x) { min(1, means[x] + stddev[x]) }),
+			   		Dataset.size=nrow(matrix))
+	df[, "Subtype"] = factor(df[, "Subtype"], levels=names(sample2subtype))
+	
+	df
+}
+
 ##' Create a sample ordering. Each sample is assigned to the subtype with the
 ##' highest probability. Within each subtype, the samples are ordered by decreasing
 ##' probability for this subtype.
@@ -196,4 +236,69 @@ coclusteringPlot = function(matrix, normalize=FALSE) {
 			  labCol="",
 			  labRow=""
 	)
+}
+
+##' Generates a forest plot for the subtyping results.
+##' For each data set and subtype, the plot contains two entries, one for
+##' all samples assigned to that subtype and one for all samples not assigned
+##' to the subtype. 
+##' @param results named list with all results from the subtyping
+##' @param colors vector with colors to use; default: NULL
+##' @param xaxis either "dataset" or "mean", denoting which is plotted on the xaxis
+##' @param combine boolean indicating whether values for sample belonging to and not 
+##' belonging to a subtype should be combined in one facet
+##' @return the ggplot object
+##' @author Andreas Schlicker
+forestPlot = function(results, colors=NULL, xaxis=c("dataset", "mean"), combine=TRUE) {
+	xaxis = match.arg(xaxis)
+	
+	plotting.df = do.call("rbind", lapply(names(results), function(x) { pMat2ForestDf(results[[x]][[1]], x)}))
+	
+	# Add indicator for plotting symbol
+	in.subtype = rep("y", times=nrow(plotting.df))
+	in.subtype[grep("not", plotting.df[, "Subtype"])] = "n"
+	plotting.df = cbind(plotting.df, in.subtype=in.subtype)
+	
+	# Reorder data sets from largest to smallest
+	plotting.df[, "Dataset"] = factor(plotting.df[, "Dataset"], 
+									  levels=as.character(unique(plotting.df[unique(order(plotting.df[, "Dataset.size"])), "Dataset"])))
+	
+	
+	if (combine) {
+		plotting.df[, "Subtype"] = gsub("not.", "", plotting.df[, "Subtype"])
+	}
+	
+	total = sum(unlist(lapply(results, function(x) { nrow(x[[1]]) })))
+	plotting.df[, "Dataset.size"] = sapply(plotting.df[, "Dataset.size"], function(x) { (x / total) } )
+	plotting.df[, "Dataset.size"] = plotting.df[, "Dataset.size"] / max(plotting.df[, "Dataset.size"]) * 2 + 3.5
+	
+	p = ggplot(plotting.df, aes(x=Dataset, y=Mean, ymin=ymin, ymax=ymax, color=Subtype, shape=in.subtype)) +
+		geom_point(aes(size=Dataset.size)) + 
+		geom_linerange(aes(size=1.5)) +
+		guides(color=FALSE, size=FALSE, shape=guide_legend(override.aes=list(size=5))) +
+		scale_shape_manual(name="Assigned to\nsubtype",
+						   breaks=c("n", "y"),
+						   values=c(15, 16),
+						   labels=c("no", "yes")) +
+		facet_grid(. ~ Subtype) +
+		theme(axis.ticks.x=element_blank(), 
+			  axis.text.x=element_blank(),
+			  axis.title.x=element_text(size=20, face="bold"),
+			  axis.text.y=element_text(size=20, face="bold"),
+			  axis.title.y=element_text(size=20, face="bold"),
+			  strip.text=element_text(size=20, face="bold"),
+			  legend.title=element_text(size=16, face="bold"),
+			  legend.text=element_text(size=16, face="bold"))
+	
+	if (xaxis == "mean") {
+		p = p + coord_flip()
+	}
+
+	if (!is.null(colors)) {
+		notcols = colors
+		names(notcols) = paste("not.", names(notcols), sep="")
+		p = p + scale_color_manual(values=c(colors, notcols))
+	}
+	
+	p
 }
