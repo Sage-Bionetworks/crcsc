@@ -3,6 +3,22 @@
 # Author: Andreas Schlicker
 ###############################################################################
 
+##' Calculates the margin of a vector. The margin is defined as 
+##' largest element - second largest element. If the vector contains
+##' only one element, this is returned.
+##' @param vec the data vector
+##' @param na.rm ignored, for compatibility reasons
+##' @return the margin
+margin = function(vec, na.rm=TRUE) {
+	x = sort(vec[!is.na(vec)], decreasing=TRUE)
+	
+	if (length(x) < 2) {
+		return(x[1])
+	}
+	
+	x[1] - x[2]
+}
+
 ##' Converts a subtyping matrix into the data frame used for plotting
 ##' @param matrix the subtyping matrix with samples in rows and subtypes
 ##' in columns
@@ -22,7 +38,7 @@ pMat2PlotDf = function(matrix) {
 ##' @return the plotting data frame
 ##' @author Andreas Schlicker
 pMat2MarginDf = function(matrix) {
-	data.frame(margin=apply(matrix, 1, function(x) { sort(x, decreasing=TRUE)[1] - sort(x, decreasing=TRUE)[2] }),
+	data.frame(margin=apply(matrix, 1, function(x) { margin(x) }),
 			   Subtype=apply(matrix, 1, function(x) { names(x)[which(x == max(x))][1] }),
 			   sample.name=rownames(matrix))
 }
@@ -30,9 +46,10 @@ pMat2MarginDf = function(matrix) {
 ##' Convert a subtyping matrix into a data frame for a forest plot.
 ##' @param matrix the subtyping matrix
 ##' @param name the data set name
+##' @param statistic name of a function used to calculate the statistic
 ##' @return the plotting data frame
 ##' @author Andreas Schlicker
-pMat2ForestDf = function(matrix, name) {
+pMat2ForestDf = function(matrix, name, statistic="mean") {
 	# Assign samples to subtypes
 	subtypes = apply(matrix, 1, function(x) { names(x)[which(x == max(x))][1] })
 	
@@ -40,14 +57,27 @@ pMat2ForestDf = function(matrix, name) {
 	sample2subtype = list()
 	for (n in colnames(matrix)) {
 		sample2subtype[[n]] = names(subtypes)[subtypes == n]
-		sample2subtype[[paste("not.", n, sep="")]] = names(subtypes)[subtypes != n]
+		# If we're calculating the margin, we're not interested in samples that are not 
+		# assigned to a subtype
+		if (statistic != "margin") {
+			sample2subtype[[paste("not.", n, sep="")]] = names(subtypes)[subtypes != n]
+		}
 	}
 	
 	# Calculate statistics
 	means = double(length(sample2subtype))
 	stddev = double(length(sample2subtype))
 	for (i in 1:length(means)) {
-		means[i] = mean(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		if (statistic == "margin") {
+			# The margin is a per sample statistic, so get the mean value for a subtype
+			if (length(sample2subtype[[i]]) == 1) {
+				means[i] = get(statistic)(matrix[sample2subtype[[i]], ], na.rm=TRUE)
+			} else if (length(sample2subtype[[i]]) > 1) {
+				means[i] = mean(apply(matrix[sample2subtype[[i]], ], 1, get(statistic), na.rm=TRUE))
+			}
+		} else {
+			means[i] = get(statistic)(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		}
 		names(means)[i] = names(sample2subtype)[i]
 		
 		#stddev[i] = means[i] / nrow(matrix)
@@ -244,15 +274,19 @@ coclusteringPlot = function(matrix, normalize=FALSE) {
 ##' to the subtype. 
 ##' @param results named list with all results from the subtyping
 ##' @param colors vector with colors to use; default: NULL
-##' @param xaxis either "dataset" or "mean", denoting which is plotted on the xaxis
+##' @param xaxis either "dataset" or "statistic", denoting which is plotted on the xaxis
+##' @param statistic "mean", "median" or "margin"
 ##' @param combine boolean indicating whether values for sample belonging to and not 
 ##' belonging to a subtype should be combined in one facet
 ##' @return the ggplot object
 ##' @author Andreas Schlicker
-forestPlot = function(results, colors=NULL, xaxis=c("dataset", "mean"), combine=TRUE) {
-	xaxis = match.arg(xaxis)
+forestPlot = function(results, colors=NULL, xaxis=c("dataset", "statistic"), statistic=c("mean", "median", "margin"), combine=TRUE) {
+	require(ggplot2) || stop("Can't load package \"ggplot2\".")
 	
-	plotting.df = do.call("rbind", lapply(names(results), function(x) { pMat2ForestDf(results[[x]][[1]], x)}))
+	xaxis = match.arg(xaxis)
+	statistic = match.arg(statistic)
+
+	plotting.df = do.call("rbind", lapply(names(results), function(x) { pMat2ForestDf(results[[x]][[1]], x, statistic) }))
 	
 	# Add indicator for plotting symbol
 	in.subtype = rep("y", times=nrow(plotting.df))
@@ -262,7 +296,6 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "mean"), combine=
 	# Reorder data sets from largest to smallest
 	plotting.df[, "Dataset"] = factor(plotting.df[, "Dataset"], 
 									  levels=as.character(unique(plotting.df[unique(order(plotting.df[, "Dataset.size"])), "Dataset"])))
-	
 	
 	if (combine) {
 		plotting.df[, "Subtype"] = gsub("not.", "", plotting.df[, "Subtype"])
@@ -276,10 +309,6 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "mean"), combine=
 		geom_point(aes(size=Dataset.size)) + 
 		geom_linerange(aes(size=1.5)) +
 		guides(color=FALSE, size=FALSE, shape=guide_legend(override.aes=list(size=5))) +
-		scale_shape_manual(name="Assigned to\nsubtype",
-						   breaks=c("n", "y"),
-						   values=c(15, 16),
-						   labels=c("no", "yes")) +
 		facet_grid(. ~ Subtype) +
 		theme(axis.ticks.x=element_blank(), 
 			  axis.text.x=element_blank(),
@@ -290,7 +319,16 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "mean"), combine=
 			  legend.title=element_text(size=16, face="bold"),
 			  legend.text=element_text(size=16, face="bold"))
 	
-	if (xaxis == "mean") {
+	if (statistic == "margin") {
+		p = p + guides(shape=FALSE)
+	} else {
+		p = p + scale_shape_manual(name="Assigned to\nsubtype",
+						     	   breaks=c("n", "y"),
+						   		   values=c(15, 16),
+								   labels=c("no", "yes"))
+	}
+
+	if (xaxis == "statistic") {
 		p = p + coord_flip()
 	}
 
