@@ -65,7 +65,7 @@ allData = c(coreExprList, publicExprList)
 # Subtyping
 allResults = list()
 for (n in names(allData)) {
-	x = publicExprList[[n]]
+	x = allData[[n]]
 	
 	sep = "\t"
 	if (!is.null(x$sep)) {
@@ -103,7 +103,7 @@ for (n in names(allData)) {
 	signatures = signaturesList(rownames(data.mat), sig.id, iNMFSignatures, mapping)
 	
 	# Run bootstrapped iNMF subtyping
-	allResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=1000, procCores=15)
+	allResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=10000, procCores=20)
 }
 
 # Save the results in Synapse
