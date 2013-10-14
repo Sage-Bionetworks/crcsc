@@ -88,7 +88,7 @@ pMat2ForestDf = function(matrix, name, statistic="mean") {
 	# Combine
 	df = data.frame(Dataset=name,
 			 	   	Subtype=names(means),
-			   		Mean=means,
+			   		statistic=means,
 			   		ymin=sapply(names(means), function(x) { max(0, means[x] - stddev[x]) }),
 			   		ymax=sapply(names(means), function(x) { min(1, means[x] + stddev[x]) }),
 			   		Dataset.size=nrow(matrix))
@@ -303,21 +303,22 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "statistic"), sta
 	
 	total = sum(unlist(lapply(results, function(x) { nrow(x[[1]]) })))
 	plotting.df[, "Dataset.size"] = sapply(plotting.df[, "Dataset.size"], function(x) { (x / total) } )
-	plotting.df[, "Dataset.size"] = plotting.df[, "Dataset.size"] / max(plotting.df[, "Dataset.size"]) * 2 + 3.5
+	plotting.df[, "Dataset.size"] = plotting.df[, "Dataset.size"] / max(plotting.df[, "Dataset.size"]) * 3 + 4.5
 	
-	p = ggplot(plotting.df, aes(x=Dataset, y=Mean, ymin=ymin, ymax=ymax, color=Subtype, shape=in.subtype)) +
+	p = ggplot(plotting.df, aes(x=Dataset, y=statistic, ymin=ymin, ymax=ymax, color=Subtype, shape=in.subtype)) +
 		geom_point(aes(size=Dataset.size)) + 
 		geom_linerange(aes(size=1.5)) +
 		guides(color=FALSE, size=FALSE, shape=guide_legend(override.aes=list(size=5))) +
 		facet_grid(. ~ Subtype) +
-		theme(axis.ticks.x=element_blank(), 
-			  axis.text.x=element_blank(),
+		xlab("Data set") + 
+		ylab(statistic) + 
+		theme(axis.text.x=element_blank(),
 			  axis.title.x=element_text(size=20, face="bold"),
 			  axis.text.y=element_text(size=20, face="bold"),
 			  axis.title.y=element_text(size=20, face="bold"),
 			  strip.text=element_text(size=20, face="bold"),
-			  legend.title=element_text(size=16, face="bold"),
-			  legend.text=element_text(size=16, face="bold"))
+			  legend.title=element_text(size=20, face="bold"),
+			  legend.text=element_text(size=20, face="bold"))
 	
 	if (statistic == "margin") {
 		p = p + guides(shape=FALSE)
@@ -329,7 +330,9 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "statistic"), sta
 	}
 
 	if (xaxis == "statistic") {
-		p = p + coord_flip()
+		p = p + coord_flip() + theme(axis.text.x=element_text(size=20, face="bold"))
+	} else {
+		p = p + theme(axis.ticks.x=element_blank())
 	}
 
 	if (!is.null(colors)) {
