@@ -8,13 +8,14 @@ require(ggplot2)
 
 ## GET THE LOCATION OF THIS FILE ON GITHUB
 crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
-rmdUrl <- getPermlink(crcscRepo, "dataQc/frenchClinical.Rmd")
+rmdUrl <- getPermlink(crcscRepo, "groups/G/dataQc/frenchClinical.Rmd")
 
 synFolder <- "syn2019116"
 
 gseAll <- getGEO("GSE39582", GSEMatrix=TRUE)
-gseSet <- combine(gseAll[[1]], gseAll[[2]])
-gseSet <- combine(gseSet, gseAll[[3]])
+gseSet <- gseAll[[1]]
+# gseSet <- combine(gseAll[[1]], gseAll[[2]])
+# gseSet <- combine(gseSet, gseAll[[3]])
 
 clin <- pData(gseSet)
 
@@ -38,10 +39,8 @@ clinOut <- data.frame(id=rownames(newClin),
                       nStage=NA,
                       mStage=NA,
                       tumorLocation=newClin$tumor.location,
-                      dfsMo=NA,
-                      dfsStat=NA,
-                      osMo=NA,
-                      osStat=NA,
+                      rfsMo=newClin$rfs.delay/365*12,
+                      rfsStat=newClin$rfs.event,
                       batch=newClin$normalizationcombatbatch,
                       microsatelite=newClin$mmr.status,
                       cimp=NA,
