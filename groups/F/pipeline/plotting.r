@@ -343,3 +343,45 @@ forestPlot = function(results, colors=NULL, xaxis=c("dataset", "statistic"), sta
 	
 	p
 }
+
+##' Create the quality control heatmap. Column and row colors indicate cluster
+##' membership for samples and features, respectively. 
+##' @param exprs expression matrix with samples in columns and features in rows
+##' @param clustering named list with sample to cluster assignment
+##' @param signatures named list with feature to signature assignment
+##' @return heatmap.2 for plotting
+##' @author Andreas Schlicker
+createHeatmap = function(exprs, clustering, signatures) {
+	require(gplots) || stop("I need package \"gplots\" for doing this.")
+	
+	samples = c()
+	for (n in sort(names(clustering))) {
+		samples = c(samples, clustering[[n]])
+	}
+	
+	features = c()
+	for (n in sort(names(signatures))) {
+		features = c(features, signatures[[n]])
+	}
+	
+	bounds = quantile(exprs[unlist(signatures), unlist(clustering)], probs=c(0.05, 0.95), na.rm=TRUE)
+	csd = c()
+	for (i in 1:length(clustering)) {
+		csd = c(csd, rep(palette()[i %% 8], times=length(clustering[[sort(names(clustering))[i]]])))
+	}
+	rsd = c()
+	for (i in 1:length(signatures)) {
+		rsd = c(rsd, rep(palette()[i %% 8], times=length(signatures[[sort(names(signatures))[i]]])))
+	}
+	heatmap.2(exprs[features, samples],
+			trace="none",
+			scale="none",
+			col=colorpanel(49, low="blue", high="yellow"),
+			breaks=seq(bounds[1], bounds[2], length.out=50),
+			ColSideColors=csd,
+			RowSideColors=rsd,
+			Colv=NA,
+			Rowv=NA,
+			dendrogram="none")
+}
+
