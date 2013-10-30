@@ -29,7 +29,8 @@ loadMatrix = function(synId, file="", sep="\t", quote=""){
 					 stringsAsFactors=FALSE,
 					 as.is=TRUE,
 					 fill=TRUE,
-					 comment.char="")
+					 comment.char="",
+					 check.names=FALSE)
 	
 	# Remove duplicates
 	dupls = which(duplicated(raw[, 1]))
@@ -47,7 +48,6 @@ loadMatrix = function(synId, file="", sep="\t", quote=""){
 	if (is.character(raw[, 1])) {
 		rownames(mat) = raw[, 1]
 	}
-	colnames(mat) = as.character(gsub("^X", "", colnames(mat)))
 	
 	mat
 }

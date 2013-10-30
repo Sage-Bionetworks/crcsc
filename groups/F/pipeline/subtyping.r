@@ -3,27 +3,36 @@
 # Author: Andreas Schlicker
 ###############################################################################
 
-
 library(synapseClient)
 library(rGithubClient)
 
+# GitHib repository
 crcRepo = getRepo("andreas-schlicker/crcsc")
-
+# iNMF subtyping functions
 sourceRepoFile(crcRepo, "groups/F/pipeline/inmf.r")
 iNMFFunctions = getPermlink(crcRepo, "groups/F/pipeline/inmf.r")
+# Functions for interacting with Synapse 
 sourceRepoFile(crcRepo, "groups/F/pipeline/synapse_helper.r")
 helperFunctions = getPermlink(crcRepo, "groups/F/pipeline/synapse_helper.r")
-sourceRepoFile(crcRepo, "groups/F/pipeline/plotting.r")
-plottingFunctions = getPermlink(crcRepo, "groups/F/pipeline/plotting.r")
-
+# Putting everything together
 thisScript = getPermlink(crcRepo, "groups/F/pipeline/subtyping.r")
 
-# password will be request after calling this
 synapseLogin("a.schlicker@nki.nl")
 
+# File with iNMF signatures (Affy probe sets, Entrez gene IDs and gene symbols) stored in Synapse
 iNMFSignaturesSynId = "syn2245383"
 iNMFSignatures = read.table(getFileLocation(synGet(iNMFSignaturesSynId)), header=TRUE, sep="\t", quote="", stringsAsFactors=FALSE)
 
+# Parameters needed to subtype each data set
+# synID: Synapse ID for the expression data
+# sigID: which type of iNMF signature do we need? Possible values: ps, symbol, entrez; default: ps
+# mapSynId: File mapping data set-sepcific ids to iNMF signature IDs
+# mapId: name of column in the mapSynId file
+# file: file to extract from zipped source files
+# is.logr: is the data already log-ratio?
+# sep: separator used in the data file; default: \t
+# quote: quote symbol used in the data file; default: none
+# annSynId: Synapse ID of the file containing sample annotation
 coreExprList = list(
 		agendia_gse42284=list(synId="syn2192792", sigId="symbol", mapSynId="syn2192791", mapId="symbol", file="GSE42284_normalized_data_matrix.txt", is.logr=TRUE),
 		agendia_ico208=list(synId="syn2192796", sigId="symbol", mapSynId="syn2192791", mapId="symbol", file="ICO208_normalized_data.txt", is.logr=TRUE),
@@ -51,10 +60,12 @@ publicExprList = list(
 		gse4183=list(synId="syn2177187", is.logr=FALSE, annSynId="syn2177188"),
 		gse8671=list(synId="syn2181088", is.logr=FALSE, annSynId="syn2181090"))
 
+allData = c(coreExprList, publicExprList)
 
+# Subtyping
 allResults = list()
-for (n in c(names(coreExprList), names(publicExprList))[11:23]) {
-	x = publicExprList[[n]]
+for (n in names(allData)) {
+	x = allData[[n]]
 	
 	sep = "\t"
 	if (!is.null(x$sep)) {
@@ -92,26 +103,42 @@ for (n in c(names(coreExprList), names(publicExprList))[11:23]) {
 	signatures = signaturesList(rownames(data.mat), sig.id, iNMFSignatures, mapping)
 	
 	# Run bootstrapped iNMF subtyping
-	allResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=1000, procCores=15)
+	allResults[[n]] = bootstrappediNMF(data.mat, signatures, runs=10000, procCores=20)
 }
 
-plotting.cols = c("gray10", "gray40", "gray70", "springgreen4", "springgreen2")
-plotting.shapes = 15:19
-for (x in names(allResults)) {
-	png(paste(x, "probability.png", sep="_"), width=6000, height=3000, res=300)
-	print(probabilityPlot(allResults[[x]][[1]], colors=plotting.cols))
-	dev.off()
-	
-	png(paste(x, "probability_faceted.png", sep="_"), width=6000, height=3000, res=300)
-	print(facetedProbabilityPlot(allResults[[x]][[1]], colors=plotting.cols))
-	dev.off()
-	
-	png(paste(x, "margins_margin.png", sep="_"), width=6000, height=3000, res=300)
-	print(marginPlot(allResults[[x]][[1]], colors=plotting.cols, shapes=plotting.shapes))
-	dev.off()
-	
-	png(paste(x, "cooccurrence.png", sep="_"), width=3000, height=3000, res=300)
-	coclusteringPlot(allResults[[x]][[2]])
-	dev.off()
-}
+# Save the results in Synapse
+synResultDir = "syn2274068"
+groupName = "GroupF"
 
+lapply(names(allResults), 
+	   function(datasetName){
+			# Round probability values
+		    iNMFRes = round(allResults[[datasetName]][[1]], digits=4)
+			colnames(iNMFRes) = paste("subtype", colnames(iNMFRes), sep="")
+			# And create data frame
+			iNMF.df = data.frame(sampleName=rownames(iNMFRes), iNMFRes)
+			# Synapse ID of the expression data
+			synId = allData[[datasetName]]$synId
+			# That's where we got the ID mapping got from. If any was used
+			mapSynId = allData[[datasetName]]$mapSynId
+			
+			filePath = file.path(tempdir(), paste(groupName,"_",synId,"_",datasetName,".tsv",sep=""))
+			write.table(iNMF.df, file=filePath, sep="\t", quote=FALSE, row.names=FALSE)
+			
+			# List with used resources
+			resources = list(list(entity=iNMFSignaturesSynId, wasExecuted=F),
+							 list(entity=synId, wasExecuted=F),
+							 list(url=iNMFFunctions, name=basename(iNMFFunctions), wasExecuted=F),
+					 		 list(url=helperFunctions, name=basename(helperFunctions), wasExecuted=F),
+							 list(url=thisScript, name=basename(thisScript), wasExecuted=T))
+			if (!is.null(mapSynId)) {
+				resources = c(resources, list(list(entity=mapSynId, wasExecuted=F)))
+			}
+			
+			# Store results in synapse and forget about the temporary file 
+			synFile = File(path=filePath, parentId=synResultDir)
+			synFile = synStore(synFile, used=resources)
+			unlink(filePath)
+		})
+
+synapseLogout()
