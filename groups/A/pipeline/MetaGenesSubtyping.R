@@ -52,7 +52,7 @@ MetaGenesSubtyping <- function(X, scaling, run.mode,
                                gene.modules, subtypes = NULL, 
                                lda_classifier = NULL, 
                                meta.median = FALSE, probesetlevel = TRUE) {
-    source("moduleScores.R")
+##    source("moduleScores.R")
 
     gene.modules$GeneSymbol <- as.character(gene.modules$GeneSymbol)
     if ("ProbesetID" %in% colnames(gene.modules)) {
