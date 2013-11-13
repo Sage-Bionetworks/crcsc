@@ -87,6 +87,7 @@ exprList <- list(agendia_gse42284 = list(synId = "syn2192792",
 
 for (n in names(exprList)) {
     x = exprList[[n]]
+    message(paste("Now processing ", n, "..."))
 
     sep <- ifelse (is.null(x$sep), "\t", x$sep)
     quote <- ifelse (is.null(x$quote), "", x$quote)
@@ -128,15 +129,16 @@ for (n in names(exprList)) {
     write.table(tmp, file = filePath, sep = "\t", quote = FALSE, row.names = FALSE)
 
     ## Store in Synapse
-    #synFile <- File(path = filePath, parentId = synResultDir)
-    #synFile <- synStore(synFile, used = list(list(entity = "petacc3", wasExecuted = FALSE),
-    #                                 list(entity = x$synId, wasExecuted = FALSE),
-    #                                 list(url = ModuleFunctions, wasExecuted = FALSE),
-    #                                 list(url = helperFunctions, wasExecuted = FALSE),
-    #                                 list(url = thisScript, wasExecuted = TRUE),
-    #                                 list(entity = modulesSynId, wasExecuted = FALSE),
-    #                                 list(entity = classifierSynId, wasExecuted = FALSE)))
-    #unlink(filePath)
+    synFile <- File(path = filePath, parentId = synResultDir)
+    synFile <- synStore(synFile, used = list(
+                                     list(entity = "syn2175581", wasExecuted = FALSE),
+                                     list(entity = x$synId, wasExecuted = FALSE),
+                                     list(url = ModuleFunctions, wasExecuted = FALSE),
+                                     list(url = helperFunctions, wasExecuted = FALSE),
+                                     list(url = thisScript, wasExecuted = TRUE),
+                                     list(entity = modulesSynId, wasExecuted = FALSE),
+                                     list(entity = classifierSynId, wasExecuted = FALSE)))
+    unlink(filePath)
 }
 
 synapseLogout()
