@@ -23,7 +23,7 @@ thisScript <- getPermlink(crcRepo, "groups/A/pipeline/groupA_subtyping_pipeline.
 synapseLogin("charlottesoneson@gmail.com")
 
 ## Set the Synapse result directory (phaseI) and the group name
-synResultDir <- "syn2229267"
+synResultDir <- "syn2274064"
 groupName <- "GroupA"
 
 ## Load the module definitions and the LDA classifier
