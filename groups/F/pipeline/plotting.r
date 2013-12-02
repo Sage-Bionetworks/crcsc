@@ -3,6 +3,22 @@
 # Author: Andreas Schlicker
 ###############################################################################
 
+##' Calculates the margin of a vector. The margin is defined as 
+##' largest element - second largest element. If the vector contains
+##' only one element, this is returned.
+##' @param vec the data vector
+##' @param na.rm ignored, for compatibility reasons
+##' @return the margin
+margin = function(vec, na.rm=TRUE) {
+	x = sort(vec[!is.na(vec)], decreasing=TRUE)
+	
+	if (length(x) < 2) {
+		return(x[1])
+	}
+	
+	x[1] - x[2]
+}
+
 ##' Converts a subtyping matrix into the data frame used for plotting
 ##' @param matrix the subtyping matrix with samples in rows and subtypes
 ##' in columns
@@ -22,9 +38,63 @@ pMat2PlotDf = function(matrix) {
 ##' @return the plotting data frame
 ##' @author Andreas Schlicker
 pMat2MarginDf = function(matrix) {
-	data.frame(margin=apply(matrix, 1, function(x) { sort(x, decreasing=TRUE)[1] - sort(x, decreasing=TRUE)[2] }),
+	data.frame(margin=apply(matrix, 1, function(x) { margin(x) }),
 			   Subtype=apply(matrix, 1, function(x) { names(x)[which(x == max(x))][1] }),
 			   sample.name=rownames(matrix))
+}
+
+##' Convert a subtyping matrix into a data frame for a forest plot.
+##' @param matrix the subtyping matrix
+##' @param name the data set name
+##' @param statistic name of a function used to calculate the statistic
+##' @return the plotting data frame
+##' @author Andreas Schlicker
+pMat2ForestDf = function(matrix, name, statistic="mean") {
+	# Assign samples to subtypes
+	subtypes = apply(matrix, 1, function(x) { names(x)[which(x == max(x))][1] })
+	
+	# Which samples do or do not belong to each subtype?
+	sample2subtype = list()
+	for (n in colnames(matrix)) {
+		sample2subtype[[n]] = names(subtypes)[subtypes == n]
+		# If we're calculating the margin, we're not interested in samples that are not 
+		# assigned to a subtype
+		if (statistic != "margin") {
+			sample2subtype[[paste("not.", n, sep="")]] = names(subtypes)[subtypes != n]
+		}
+	}
+	
+	# Calculate statistics
+	means = double(length(sample2subtype))
+	stddev = double(length(sample2subtype))
+	for (i in 1:length(means)) {
+		if (statistic == "margin") {
+			# The margin is a per sample statistic, so get the mean value for a subtype
+			if (length(sample2subtype[[i]]) == 1) {
+				means[i] = get(statistic)(matrix[sample2subtype[[i]], ], na.rm=TRUE)
+			} else if (length(sample2subtype[[i]]) > 1) {
+				means[i] = mean(apply(matrix[sample2subtype[[i]], ], 1, get(statistic), na.rm=TRUE))
+			}
+		} else {
+			means[i] = get(statistic)(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		}
+		names(means)[i] = names(sample2subtype)[i]
+		
+		#stddev[i] = means[i] / nrow(matrix)
+		stddev[i] = sd(matrix[sample2subtype[[i]], ceiling(i/2)], na.rm=TRUE)
+		names(stddev)[i] = names(sample2subtype)[i]
+	}
+	
+	# Combine
+	df = data.frame(Dataset=name,
+			 	   	Subtype=names(means),
+			   		statistic=means,
+			   		ymin=sapply(names(means), function(x) { max(0, means[x] - stddev[x]) }),
+			   		ymax=sapply(names(means), function(x) { min(1, means[x] + stddev[x]) }),
+			   		Dataset.size=nrow(matrix))
+	df[, "Subtype"] = factor(df[, "Subtype"], levels=names(sample2subtype))
+	
+	df
 }
 
 ##' Create a sample ordering. Each sample is assigned to the subtype with the
@@ -197,3 +267,121 @@ coclusteringPlot = function(matrix, normalize=FALSE) {
 			  labRow=""
 	)
 }
+
+##' Generates a forest plot for the subtyping results.
+##' For each data set and subtype, the plot contains two entries, one for
+##' all samples assigned to that subtype and one for all samples not assigned
+##' to the subtype. 
+##' @param results named list with all results from the subtyping
+##' @param colors vector with colors to use; default: NULL
+##' @param xaxis either "dataset" or "statistic", denoting which is plotted on the xaxis
+##' @param statistic "mean", "median" or "margin"
+##' @param combine boolean indicating whether values for sample belonging to and not 
+##' belonging to a subtype should be combined in one facet
+##' @return the ggplot object
+##' @author Andreas Schlicker
+forestPlot = function(results, colors=NULL, xaxis=c("dataset", "statistic"), statistic=c("mean", "median", "margin"), combine=TRUE) {
+	require(ggplot2) || stop("Can't load package \"ggplot2\".")
+	
+	xaxis = match.arg(xaxis)
+	statistic = match.arg(statistic)
+
+	plotting.df = do.call("rbind", lapply(names(results), function(x) { pMat2ForestDf(results[[x]][[1]], x, statistic) }))
+	
+	# Add indicator for plotting symbol
+	in.subtype = rep("y", times=nrow(plotting.df))
+	in.subtype[grep("not", plotting.df[, "Subtype"])] = "n"
+	plotting.df = cbind(plotting.df, in.subtype=in.subtype)
+	
+	# Reorder data sets from largest to smallest
+	plotting.df[, "Dataset"] = factor(plotting.df[, "Dataset"], 
+									  levels=as.character(unique(plotting.df[unique(order(plotting.df[, "Dataset.size"])), "Dataset"])))
+	
+	if (combine) {
+		plotting.df[, "Subtype"] = gsub("not.", "", plotting.df[, "Subtype"])
+	}
+	
+	total = sum(unlist(lapply(results, function(x) { nrow(x[[1]]) })))
+	plotting.df[, "Dataset.size"] = sapply(plotting.df[, "Dataset.size"], function(x) { (x / total) } )
+	plotting.df[, "Dataset.size"] = plotting.df[, "Dataset.size"] / max(plotting.df[, "Dataset.size"]) * 3 + 4.5
+	
+	p = ggplot(plotting.df, aes(x=Dataset, y=statistic, ymin=ymin, ymax=ymax, color=Subtype, shape=in.subtype)) +
+		geom_point(aes(size=Dataset.size)) + 
+		geom_linerange(aes(size=1.5)) +
+		guides(color=FALSE, size=FALSE, shape=guide_legend(override.aes=list(size=5))) +
+		facet_grid(. ~ Subtype) +
+		xlab("Data set") + 
+		ylab(statistic) + 
+		theme(axis.text.x=element_blank(),
+			  axis.title.x=element_text(size=20, face="bold"),
+			  axis.text.y=element_text(size=20, face="bold"),
+			  axis.title.y=element_text(size=20, face="bold"),
+			  strip.text=element_text(size=20, face="bold"),
+			  legend.title=element_text(size=20, face="bold"),
+			  legend.text=element_text(size=20, face="bold"))
+	
+	if (statistic == "margin") {
+		p = p + guides(shape=FALSE)
+	} else {
+		p = p + scale_shape_manual(name="Assigned to\nsubtype",
+						     	   breaks=c("n", "y"),
+						   		   values=c(15, 16),
+								   labels=c("no", "yes"))
+	}
+
+	if (xaxis == "statistic") {
+		p = p + coord_flip() + theme(axis.text.x=element_text(size=20, face="bold"))
+	} else {
+		p = p + theme(axis.ticks.x=element_blank())
+	}
+
+	if (!is.null(colors)) {
+		notcols = colors
+		names(notcols) = paste("not.", names(notcols), sep="")
+		p = p + scale_color_manual(values=c(colors, notcols))
+	}
+	
+	p
+}
+
+##' Create the quality control heatmap. Column and row colors indicate cluster
+##' membership for samples and features, respectively. 
+##' @param exprs expression matrix with samples in columns and features in rows
+##' @param clustering named list with sample to cluster assignment
+##' @param signatures named list with feature to signature assignment
+##' @return heatmap.2 for plotting
+##' @author Andreas Schlicker
+createHeatmap = function(exprs, clustering, signatures) {
+	require(gplots) || stop("I need package \"gplots\" for doing this.")
+	
+	samples = c()
+	for (n in sort(names(clustering))) {
+		samples = c(samples, clustering[[n]])
+	}
+	
+	features = c()
+	for (n in sort(names(signatures))) {
+		features = c(features, signatures[[n]])
+	}
+	
+	bounds = quantile(exprs[unlist(signatures), unlist(clustering)], probs=c(0.05, 0.95), na.rm=TRUE)
+	csd = c()
+	for (i in 1:length(clustering)) {
+		csd = c(csd, rep(palette()[i %% 8], times=length(clustering[[sort(names(clustering))[i]]])))
+	}
+	rsd = c()
+	for (i in 1:length(signatures)) {
+		rsd = c(rsd, rep(palette()[i %% 8], times=length(signatures[[sort(names(signatures))[i]]])))
+	}
+	heatmap.2(exprs[features, samples],
+			trace="none",
+			scale="none",
+			col=colorpanel(49, low="blue", high="yellow"),
+			breaks=seq(bounds[1], bounds[2], length.out=50),
+			ColSideColors=csd,
+			RowSideColors=rsd,
+			Colv=NA,
+			Rowv=NA,
+			dendrogram="none")
+}
+
