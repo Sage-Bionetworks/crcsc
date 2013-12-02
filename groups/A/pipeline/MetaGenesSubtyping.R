@@ -55,6 +55,7 @@ MetaGenesSubtyping <- function(X, scaling, run.mode,
 ##    source("moduleScores.R")
 
     gene.modules$GeneSymbol <- as.character(gene.modules$GeneSymbol)
+    gene.modules$Groups <- as.character(gene.modules$Groups)
     if ("ProbesetID" %in% colnames(gene.modules)) {
         gene.modules$ProbesetID <- as.character(gene.modules$ProbesetID)
     }
