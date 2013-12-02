@@ -8,9 +8,9 @@ library(org.Hs.eg.db)
 
 crcRepo <- getRepo("Sage-Bionetworks/crcsc")
 sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
-code1 <- getPermlink(crcRepo, "groups/G/pipeline/JGLibrary.R")
+#code1 <- getPermlink(crcRepo, "groups/G/pipeline/JGLibrary.R")
 sourceRepoFile(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
-code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
+#code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
 thisScript <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipeline.R")
 
 # password will be request after calling this
@@ -20,6 +20,7 @@ coreExprList <- list(
   agendia_gse42284=toEntrez("syn2192792",NULL, discoverprint_19742_Map,loader=agendia_data_loader, filename="GSE42284_normalized_data_matrix.txt"),
   agendia_ico208=toEntrez("syn2192796",NULL, discoverprint_19742_Map,loader=agendia_data_loader, filename="ICO208_normalized_data.txt"),
   agendia_vhb70=toEntrez("syn2192799",NULL,discoverprint_32627_Map, loader=agendia_data_loader, filename="VHB70_normalized_data.txt"),
+  mdanderson=toEntrez("syn2233387",NULL,discoverprint_32627_Map,loader=agendia_data_loader, filename=NULL),
   kfsyscc=toEntrez("syn2169565",NULL,u133plus2Map),
   french=toEntrez("syn2171434",NULL,u133plus2Map),
   amc_ajccii=toEntrez("syn2159423",NULL,u133plus2Map,sep=","),
@@ -45,7 +46,7 @@ publicExprList <- list(
 
 allData <- c(coreExprList,publicExprList)
 
-plotCorrOfCorr(coreExprList, publicExprList)
+#plotCorrOfCorr(coreExprList, publicExprList)
 
 # find common set of entrez genes and subset on those
 midxs <- groupMatch(lapply(allData, rownames))
@@ -61,12 +62,13 @@ trainX <- exprs(mExprList[["kfsyscc"]])
 madX <- apply(trainX, 1, mad)
 trainX <- trainX[madX > quantile(madX, .6),]
 
-set.seed(2013)
+set.seed(2010)
 ## find clusters in training set (fixed at 4)
-clusterX <- findClusters(trainX,k=4)
+clusterX <- findClusters(trainX,k=5)
 table(clusterX$groups)
 
 # find top differentially expressed genes between clusters
+
 diffGenes <- findDiffGenes(trainX, clusterX$groups)
 trainXs <- trainX[rownames(trainX) %in% diffGenes,]
 
@@ -112,8 +114,11 @@ predList <- lapply(mExprList, function(eset){
 ###################################################
 # store all the predictions in synapse as tsv files
 
-synResultDir <- "syn2229267"
-groupName <- "GroupG"
+synResultDir <- "syn2277029"
+groupName <- "GroupXc"
+
+#synResultDir <- "syn2229267"
+#groupName <- "GroupG"
 trainSynId <- experimentData(allData[["kfsyscc"]])@name
 
 lapply(names(predList), function(datasetName){
@@ -128,8 +133,6 @@ lapply(names(predList), function(datasetName){
   synFile  <- File(path=filePath, parentId=synResultDir)
   synFile  <- synStore(synFile, used=list(list(entity=trainSynId, wasExecuted=F),
                                           list(entity=synId, wasExecuted=F),
-                                          list(url=code1, name=basename(code1), wasExecuted=F),
-                                          list(url=code2, name=basename(code2), wasExecuted=F),
                                           list(url=thisScript, name=basename(thisScript), wasExecuted=T)))
   unlink(filePath)
 })
