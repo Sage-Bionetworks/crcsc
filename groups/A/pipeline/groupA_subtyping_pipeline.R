@@ -83,9 +83,21 @@ exprList <- list(agendia_gse42284 = list(synId = "syn2192792",
                  gse4183 = list(synId = "syn2177187",
                      entrezMapper = u133plus2Map),
                  gse8671 = list(synId = "syn2181088",
-                     entrezMapper = u133plus2Map))
+                     entrezMapper = u133plus2Map),
+                 gse17536 = list(synId = "syn2178137",
+                     entrezMapper = u133plus2Map),
+                 gse8332 = list(synId = "syn2181082",
+                     entrezMapper = u133plus2Map,
+                     loc = "last"),
+                 gsk = list(synId = "syn2181084",
+                     entrezMapper = u133plus2Map,
+                     loc = "first"),
+                 sanger = list(synId = "syn2181097",
+                     entrezMapper = u133a2Map),
+                 ccle = list(synId = "syn2292137",
+                     entrezMapper = entrezmtMap))
 
-for (n in names(exprList)) {
+for (n in names(exprList)[24:28]) {
     x = exprList[[n]]
     message(paste("Now processing ", n, "..."))
 
@@ -96,13 +108,18 @@ for (n in names(exprList)) {
     ## Load data -> returns a data matrix (features x samples)
     data.mat <- loadMatrix(x$synId, file = file, sep = sep, quote = quote)
 
+    ## Average replicates
+    if (!is.null(x$loc)) {
+        data.mat <- averageReplicates(data.mat, x$loc)
+    }
+
     if (n != "petacc3") {
         ## Get the Entrez Gene ID for each row of the matrix
         entrezID <- x$entrezMapper(rownames(data.mat))
         
         ## Keep only rows corresponding to Entrez ID
         keep.idx <- which(!is.na(entrezID))
-        data.mat <- data.frame(data.mat[keep.idx, ])
+        data.mat <- data.frame(data.mat[keep.idx, ], stringsAsFactors = FALSE)
         entrezID <- entrezID[keep.idx]
         
         ## Summarize on Entrez Gene ID level (select feature with maximal MAD)
@@ -129,15 +146,15 @@ for (n in names(exprList)) {
     write.table(tmp, file = filePath, sep = "\t", quote = FALSE, row.names = FALSE)
 
     ## Store in Synapse
-    synFile <- File(path = filePath, parentId = synResultDir)
-    synFile <- synStore(synFile, used = list(
-                                     list(entity = "syn2175581", wasExecuted = FALSE),
-                                     list(entity = x$synId, wasExecuted = FALSE),
-                                     list(url = ModuleFunctions, wasExecuted = FALSE),
-                                     list(url = helperFunctions, wasExecuted = FALSE),
-                                     list(url = thisScript, wasExecuted = TRUE),
-                                     list(entity = modulesSynId, wasExecuted = FALSE),
-                                     list(entity = classifierSynId, wasExecuted = FALSE)))
+#    synFile <- File(path = filePath, parentId = synResultDir)
+#    synFile <- synStore(synFile, used = list(
+#                                     list(entity = "syn2175581", wasExecuted = FALSE),
+#                                     list(entity = x$synId, wasExecuted = FALSE),
+#                                     list(url = ModuleFunctions, wasExecuted = FALSE),
+#                                     list(url = helperFunctions, wasExecuted = FALSE),
+#                                     list(url = thisScript, wasExecuted = TRUE),
+#                                     list(entity = modulesSynId, wasExecuted = FALSE),
+#                                     list(entity = classifierSynId, wasExecuted = FALSE)))
     unlink(filePath)
 }
 

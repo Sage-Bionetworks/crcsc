@@ -11,6 +11,18 @@ u133plus2Map <- function(ids) {
            function(x) paste(x, collapse = "//"))
 }
 
+## Probeset IDs to Entrez Gene IDs, hgu133av2
+u133a2Map <- function(ids) {
+    sapply(AnnotationDbi::mget(as.character(ids), hgu133a2ENTREZID,
+                               ifnotfound = NA),
+           function(x) paste(x, collapse = "//"))
+}
+
+## Entrez Gene IDs + _mt to Entrez Gene IDs (CCLE)
+entrezmtMap <- function(ids) {
+    sapply(ids, function(x) {strsplit(x, "_mt")[[1]][1]})
+}
+
 ## Gene symbols to Entrez Gene IDs
 symbolMap <- function(ids) {
     sapply(AnnotationDbi::mget(as.character(ids), org.Hs.egSYMBOL2EG,
@@ -89,4 +101,27 @@ loadMatrix <- function(synId, file = "", sep = "\t", quote = "", ...) {
     }
 
     return(M)
+}
+
+## #####################################################
+## Function to average replicates (by Andreas Schlicker)
+## #####################################################
+
+averageReplicates = function(mat, loc = c("first", "last")) {
+        require(stringr) || stop("Can't load required package \"stringr\"!")
+        # Get the cell line name
+        loc = match.arg(loc)
+        clName = unlist(lapply(str_split(colnames(mat), "_"),
+            function(x) { if (loc == "last") el = length(x) else el = 1; x[el] }))
+        # Which samples map to which cell line
+        replicates = lapply(unique(clName), function(x) { which(clName == x) })
+        names(replicates) = unique(clName)
+        
+        resMat = matrix(NA, nrow = nrow(mat), ncol = length(replicates))
+        rownames(resMat) = rownames(mat)
+        colnames(resMat) = unlist(lapply(replicates, function(x) { colnames(mat)[x[1]] }))
+        for (i in 1:length(replicates)) {
+                resMat[, i] = apply(mat[, replicates[[i]], drop = FALSE], 1, mean)
+        }
+        resMat
 }
