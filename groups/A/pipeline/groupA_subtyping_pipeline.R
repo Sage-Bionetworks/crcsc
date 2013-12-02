@@ -7,6 +7,7 @@
 library(synapseClient)
 library(rGithubClient)
 library(hgu133plus2.db)
+library(hgu133a2.db)
 library(org.Hs.eg.db)
 
 crcRepo <- getRepo("sib-bcf/crcsc")
@@ -141,20 +142,22 @@ for (n in names(exprList)[24:28]) {
     tmp <- data.frame(sampleName = rownames(results$subtypes_posterior),
                       round(results$subtypes_posterior, digits = 4))
 
+    ##print(table(apply(results$subtypes_posterior, 1, which.max)))
+    
     ## Save
     filePath <- file.path(tempdir(), paste(groupName, "_", x$synId, "_", n, ".tsv", sep = ""))
     write.table(tmp, file = filePath, sep = "\t", quote = FALSE, row.names = FALSE)
 
     ## Store in Synapse
-#    synFile <- File(path = filePath, parentId = synResultDir)
-#    synFile <- synStore(synFile, used = list(
-#                                     list(entity = "syn2175581", wasExecuted = FALSE),
-#                                     list(entity = x$synId, wasExecuted = FALSE),
-#                                     list(url = ModuleFunctions, wasExecuted = FALSE),
-#                                     list(url = helperFunctions, wasExecuted = FALSE),
-#                                     list(url = thisScript, wasExecuted = TRUE),
-#                                     list(entity = modulesSynId, wasExecuted = FALSE),
-#                                     list(entity = classifierSynId, wasExecuted = FALSE)))
+    synFile <- File(path = filePath, parentId = synResultDir)
+    synFile <- synStore(synFile, used = list(
+                                     list(entity = "syn2175581", wasExecuted = FALSE),
+                                     list(entity = x$synId, wasExecuted = FALSE),
+                                     list(url = ModuleFunctions, wasExecuted = FALSE),
+                                     list(url = helperFunctions, wasExecuted = FALSE),
+                                     list(url = thisScript, wasExecuted = TRUE),
+                                     list(entity = modulesSynId, wasExecuted = FALSE),
+                                     list(entity = classifierSynId, wasExecuted = FALSE)))
     unlink(filePath)
 }
 
