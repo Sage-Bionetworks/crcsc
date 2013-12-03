@@ -5,6 +5,7 @@
 
 library(synapseClient)
 library(rGithubClient)
+library(stringr)
 
 # GitHib repository
 crcRepo = getRepo("andreas-schlicker/crcsc")
@@ -35,7 +36,8 @@ iNMFSignatures = read.table(getFileLocation(synGet(iNMFSignaturesSynId)), header
 # annSynId: Synapse ID of the file containing sample annotation
 allData = list(gse8332=list(synId="syn2181082", is.logr=TRUE, loc="last"),
 			   gsk=list(synId="syn2181084", is.logr=FALSE, loc="first"),
-			   sanger=list(synId="syn2181097", is.logr=FALSE))
+			   sanger=list(synId="syn2181097", is.logr=FALSE),
+			   ccle=list(synId="syn2292137", is.logr=FALSE, sigId="entrez"))
 
 # Subtyping
 allResults = list()
@@ -58,6 +60,10 @@ for (n in names(allData)) {
 		file = x$file
 	}
 	data.mat = loadMatrix(x$synId, file=file, sep=sep, quote=quote)
+	
+	if (n == "ccle") {
+		rownames(data.mat) = unlist(lapply(str_split(rownames(data.mat), "_"), function(x) { x[1] }))
+	}
 	
 	if (!x$is.logr) {
 		data.mat = data.mat - apply(data.mat, 1, mean)
