@@ -23,7 +23,10 @@ groupFolders <- list(GroupA="syn2274064",GroupB="syn2274065",
 groupBHandler <- function(M){
   tmp <- abs(M[, 1:6])
   v <- apply(tmp, 1, sum)
-  1 - sweep(tmp,MARGIN=1,v,"/")
+  Ntmp <- 1/sweep(tmp,MARGIN=1,v,"/")
+  v <- apply(Ntmp, 1, sum)
+  R <- sweep(Ntmp,MARGIN=1,v,"/")
+  return(R)
 }
 groupDHandler <- function(M){
   foo <- M[,1]
@@ -61,7 +64,7 @@ groupResults <- lapply(names(groupFolders), function(groupId){
   
   synIds <- sapply(tmp$entity.name, function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
   names(pmatrices) <- sapply(synIds, getDatanameForExprSynId)
-  
+  pmatrices <- pmatrices[names(pmatrices) != "unknown"]
   return (pmatrices)
 })
 names(groupResults) <- names(groupFolders)

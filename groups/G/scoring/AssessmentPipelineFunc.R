@@ -2,6 +2,14 @@ library(abind)
 library(ggplot2)
 library(reshape)
 
+thresholdGroupResults <- function(groupResults){
+  foo <- lapply(groupResults, function(groupDS)){
+    lapply(groupDS, function(ds)){
+      apply(ds, 1, function(x){ as.numeric(x == max(x)) })
+    })
+  })
+}
+
 globalConcordanceComparison <- function(groupResults){
   
   idxs <- groupMatch(lapply(groupResults, names))
