@@ -14,6 +14,7 @@ coreDatasets <- list(amc_ajccii=dataset(exprSynId="syn2159423",phenoSynId="syn21
                      agendia_gse42284=dataset(exprSynId="syn2192792",phenoSynId="syn2192794"),
                      agendia_ico208=dataset(exprSynId="syn2192796",phenoSynId="syn2289240"),
                      agendia_vhb70=dataset(exprSynId="syn2192799",phenoSynId="syn2289239"),
+<<<<<<< HEAD
                      mdanderson=dataset(exprSynId="syn223387",phenoSynId="syn2290781"))
 
 publicDatasets <- list(gse10961=dataset(exprSynId="",phenoSynId="syn2177195"),
@@ -34,6 +35,34 @@ publicDatasets <- list(gse10961=dataset(exprSynId="",phenoSynId="syn2177195"),
 getDatanameForExprSynId <- function(synId){
   idx <- which(sapply(coreDatasets, function(ds) { ds$exprSynId==synId } ))
   names(coreDatasets)[idx]
+=======
+                     mdanderson=dataset(exprSynId="syn2233387",phenoSynId="syn2290781"))
+
+publicDatasets <- list(gse10961=dataset(exprSynId="syn2177194",phenoSynId="syn2177195"),
+                      gse13067=dataset(exprSynId="syn2177888",phenoSynId="syn2177889"),
+                      gse13294=dataset(exprSynId="syn2177894",phenoSynId="syn2177895"), 
+                      gse14333=dataset(exprSynId="syn2181079",phenoSynId="syn2181006"),
+                      gse15960=dataset(exprSynId="syn2177199",phenoSynId="syn2177200"),
+                      gse17536=dataset(exprSynId="syn2178137",phenoSynId="syn2178136"),
+                      gse17537=dataset(exprSynId="syn2178128",phenoSynId="syn2178129"),
+                      gse20916=dataset(exprSynId="syn2177899",phenoSynId="syn2177898"), 
+                      gse2109=dataset(exprSynId="syn2177169",phenoSynId="syn2177168"),
+                      gse23878=dataset(exprSynId="syn2177902",phenoSynId="syn2178063"), 
+                      gse37892=dataset(exprSynId="syn2178082",phenoSynId="syn2178089"),
+                      gse4107=dataset(exprSynId="syn2177179",phenoSynId="syn2177180"), 
+                      gse4183=dataset(exprSynId="syn2177187",phenoSynId="syn2177188"),
+                      gse8671=dataset(exprSynId="syn2181088",phenoSynId="syn2181090"))
+
+getDatanameForExprSynId <- function(synId){
+  allDatasets <- c(coreDatasets, publicDatasets)
+  idx <- which(sapply(allDatasets, function(ds) { ds$exprSynId==synId } ))
+  if(length(idx) == 0){
+    warning(paste("Unable to find dataset with expr syn id:", synId))
+    return("unknown")
+  }else{
+    return(names(allDatasets)[idx])
+  }
+>>>>>>> jguinney-master
 }
 
 
@@ -113,6 +142,10 @@ amc_ajccii=(function(){
   new("phenoObj",
        data=tmp,
        discreteFields=list(location="Location (distal/prox)" ,
+<<<<<<< HEAD
+=======
+                           site="Location.CRC",
+>>>>>>> jguinney-master
                            kras="Ras",
                            braf="BRAF",
                            tp53="p53",
@@ -170,7 +203,11 @@ nki_az=(function(){
                                       msi="characteristics_ch1.7")) 
 })(),
 
+<<<<<<< HEAD
 tcga=(function(){
+=======
+tcga_rnaseq=(function(){
+>>>>>>> jguinney-master
   # TODO add mutation, MSI information
   tmp <- read.table(synGet(coreDatasets$tcga$phenoSynId)@filePath, row.names=1,sep="\t",
                     header=T,na.strings=c("NA","NaN",""),check.names=FALSE,)

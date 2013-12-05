@@ -1,12 +1,86 @@
 library(abind)
 library(ggplot2)
+<<<<<<< HEAD
+=======
+library(reshape)
+
+globalConcordanceComparison <- function(groupResults){
+  
+  idxs <- groupMatch(lapply(groupResults, names))
+  commonDatasets <- names(groupResults[[1]])[idxs[[1]]]
+  commonDatasets <- setdiff(commonDatasets,"unknown")
+  
+  # reduce to common datasets among groups
+  # concatenate results across all datasets for each group
+  R <- lapply(groupResults,function(groupR){
+    groupR <- groupR[names(groupR) %in% commonDatasets]
+    R <- do.call("rbind",lapply(names(groupR), function(dsname){
+      dsR <- groupR[[dsname]]
+      #cat(length(colnames(dsR)),"\n")
+      rownames(dsR) <- paste(dsname,".",clean.names(rownames(dsR)),sep="")
+      return (dsR)
+    }))
+  })
+  
+  groupNames <- names(groupResults)
+  groupSubtypeNames <- lapply(groupNames, function(x){ 
+    subtypes <- colnames(groupResults[[x]][[1]])
+    paste(x, subtypes,sep=".")
+  })
+  names(groupSubtypeNames) <- groupNames
+  groupSubtypeSizes <- sapply(groupSubtypeNames, length)
+  Msize <- sum(groupSubtypeSizes)
+  allSubtypes <- unlist(groupSubtypeNames)
+  
+  A <- matrix(0, nrow=Msize, ncol=Msize,dimnames=list(allSubtypes,allSubtypes))
+  diag(A) <- 1
+  N <- length(groupNames)
+  for(i in 1:(N-1)){
+    group1 <- groupNames[i]
+    for(j in (i+1):N){
+      group2 <- groupNames[j]
+      
+      pMatrix1 <- R[[group1]]
+      pMatrix2 <- R[[group2]]
+      cat(group1, group2, "\n")
+      if(!is.null(pMatrix1) & !is.null(pMatrix2)){
+        
+        idxs <- match(clean.names(rownames(pMatrix1)), 
+                      clean.names(rownames(pMatrix2)))
+        pMatrix1 <- pMatrix1[!is.na(idxs),]
+        pMatrix2 <- pMatrix2[na.omit(idxs),]
+          
+          
+        tmp <- assessCrossGroupConcordance(pMatrix1,pMatrix2)
+       
+        x <- sum(groupSubtypeSizes[0:(i-1)]) + 1
+        y <- sum(groupSubtypeSizes[0:(j-1)]) + 1
+        xrange <- x:(x+groupSubtypeSizes[i]-1)
+        yrange <- y:(y+groupSubtypeSizes[j]-1)
+        A[xrange,yrange] <- tmp$perAtoB
+        A[yrange,xrange] <- t(tmp$perBtoA)
+      }
+    }
+  }
+  
+  ### show percent similarity heatmap
+  pdf(paste("evalPlots/clusterHeatmapByDataset/ALL_concat.pdf",sep=""),width=8,height=6)
+  makeConcordanceFrequencyHeatmap(A,title="ALL concatenated",breaks=cumsum(groupSubtypeSizes))
+  dev.off()
+}
+>>>>>>> jguinney-master
 
 makeConcordanceFrequencyHeatmap <- function(A, title, breaks){
   m <- melt(A)
   
   p <- ggplot(m, aes(X1, X2)) + 
+<<<<<<< HEAD
     geom_tile(aes(fill = value),colour = "white") + 
     scale_fill_gradient(low = "white",high = "steelblue")
+=======
+    geom_tile(aes(fill = value),colour = "white")
+    #scale_fill_gradient(low = "white",high = "steelblue")
+>>>>>>> jguinney-master
   p <- p + geom_vline(xintercept=(breaks + .5), lwd=1)
   p <- p + geom_hline(yintercept=(breaks + .5), lwd=1)
   p <- p + xlab("") + 
@@ -19,6 +93,7 @@ makeConcordanceFrequencyHeatmap <- function(A, title, breaks){
 }
 
 clean.names <- function(x){
+<<<<<<< HEAD
   x <- gsub("^X(\\d.*)","\\1",x)
   gsub("\\.","-", x)
 }
@@ -95,15 +170,28 @@ assessPathways <- function(gse, pMatrices){
     
     meta_pvals <- apply(gs.pvals, 1, function(p) Stouffer.test(p,weights) )
 }
+=======
+  x <- gsub("(.*)\\.CEL.*","\\1",x)
+  x <- gsub("^X(\\d.*)","\\1",x)
+  x <- gsub("\\.","-", x)
+  gsub("^(GSM\\d*)\\D.*","\\1",x)
+}
+
+
+
+>>>>>>> jguinney-master
 
 assessPhenotypes <- function(vObj, pMatrix){
   #browser()
   phenotypeTbl <- vObj$data
   
+<<<<<<< HEAD
   clean.names <- function(x){
     x <- gsub("^X(\\d.*)","\\1",x)
     gsub("\\.","-", x)
   }
+=======
+>>>>>>> jguinney-master
   
   idxs <- groupMatch(clean.names(rownames(phenotypeTbl)),clean.names(rownames(pMatrix)))
   if(length(idxs[[1]]) == 0){
@@ -121,12 +209,20 @@ assessPhenotypes <- function(vObj, pMatrix){
   })
   continuousResults <- lapply(vObj$continuousFields, function(fieldName){
     cat(fieldName,"\n")
+<<<<<<< HEAD
     continuousPhenotype <- phenotypeTbl.m[, fieldName]
+=======
+    continuousPhenotype <- as.numeric(phenotypeTbl.m[, fieldName])
+>>>>>>> jguinney-master
     mask <- !is.na(continuousPhenotype)
     test.continuous(continuousPhenotype[mask], pMatrix.m[mask,])
   })
   censoredResults <- lapply(vObj$censoredFields, function(pair){
+<<<<<<< HEAD
     time <- phenotypeTbl.m[, pair[1]]
+=======
+    time <- as.numeric(phenotypeTbl.m[, pair[1]])
+>>>>>>> jguinney-master
     status <- phenotypeTbl.m[, pair[2]]
     mask <- !is.na(time) & !is.na(status)
     test.censored(Surv(time[mask],status[mask]), pMatrix.m[mask,])
