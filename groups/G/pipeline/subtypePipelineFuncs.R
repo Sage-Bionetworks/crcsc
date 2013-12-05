@@ -1,5 +1,4 @@
 library(data.table)
-
 u133plus2Map <- function(probeIds){mget(probeIds,hgu133plus2ENTREZID,ifnotfound=NA) }
 u133a2Map <- function(probeIds){mget(probeIds,hgu133a2ENTREZID,ifnotfound=NA) }
 symbolMap <- function(probeIds){mget(probeIds,org.Hs.egSYMBOL2EG,ifnotfound=NA) }
