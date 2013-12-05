@@ -10,24 +10,6 @@ synapseLogin("justin.guinney@sagebase.org")
 source("groups/G/scoring//AssessmentPipelineFunc.R")
 
 
-<<<<<<< HEAD
-datasets <- coreDatasets
-#TODO add public datasets
-
-groupResultParents <- list(GroupA="syn2274064",GroupB="syn2274065",
-                           GroupC="syn2274066",GroupD="syn2274067",
-                           GroupE="syn2274069",GroupF="syn2274068",
-                           GroupG="syn2274063")
-
-
-# load all pmatrices
-groupResults <- lapply(groupResultParents, function(parentId){
-  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="',parentId,'"',sep=""))
-  N <- nrow(tmp)
-  pmatrices <- lapply(tmp$entity.id, function(synId){
-    pMatrix <- read.table(synGet(synId)@filePath, sep="\t",header=T,as.is=T,row.names=1,check.names=FALSE)
-  })
-=======
 datasets <- c(coreDatasets,publicDatasets)
 
 groupFolders <- list(GroupA="syn2274064",GroupB="syn2274065",
@@ -77,17 +59,11 @@ groupResults <- lapply(names(groupFolders), function(groupId){
     return (pMatrix)
   })
   
->>>>>>> jguinney-master
   synIds <- sapply(tmp$entity.name, function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
   names(pmatrices) <- sapply(synIds, getDatanameForExprSynId)
   
   return (pmatrices)
 })
-<<<<<<< HEAD
-groupResults <- groupResults[sapply(groupResults, length) > 0]
-
-
-=======
 names(groupResults) <- names(groupFolders)
 groupResults <- groupResults[sapply(groupResults, length) > 0]
 
@@ -97,24 +73,10 @@ groupResults <- groupResults[sapply(groupResults, length) > 0]
 ## ASSESS phenotypes
 allPhenoObjs <- c(corePhenoObjs, publicPhenoObjs)
 
->>>>>>> jguinney-master
 tmplist <- list()
 for(group in names(groupResults)){
   groupResult <- groupResults[[group]]
   for(ds in names(groupResult)){
-<<<<<<< HEAD
-    if(ds %in% names(corePhenoObjs)){
-      phenoObj <- corePhenoObjs[[ds]]
-      cat(ds, group,"\n")
-      tmp <- assessPhenotypes(phenoObj, groupResult[[ds]])
-      tmp2 <- data.frame(group=rep(group, length(tmp)),
-                         ds=rep(ds,length(tmp)),
-                         feature=names(tmp),
-                         t(sapply(tmp,function(x){
-        quantile(x, c(.05, .5, .95))
-      })),check.names=FALSE)
-      tmplist[[length(tmplist) + 1]] <- tmp2
-=======
     if(ds %in% names(allPhenoObjs)){
       phenoObj <- allPhenoObjs[[ds]]
       cat(ds, group,"\n")
@@ -128,7 +90,6 @@ for(group in names(groupResults)){
         })),check.names=FALSE)
         tmplist[[length(tmplist) + 1]] <- tmp2
       }
->>>>>>> jguinney-master
     }
   }
 }
@@ -175,8 +136,6 @@ for(feature in unique(df$feature)){
   
   pdf(paste("evalPlots/byFeature/",as.character(feature),".pdf",sep=""),width=8,height=5)
   print(sp)
-<<<<<<< HEAD
-=======
   
   uds <- as.character(unique(data$ds))
   if(feature %in% names(allPhenoObjs[[uds[1]]]$discreteFields)){
@@ -189,7 +148,6 @@ for(feature in unique(df$feature)){
       title(ds)
     }
   }
->>>>>>> jguinney-master
   dev.off()
 }
 
@@ -216,11 +174,7 @@ for(group in unique(df$group)){
 }
 
 
-<<<<<<< HEAD
-sp + facet_wrap(~ds,ncol=2)
-=======
 #sp + facet_wrap(~ds,ncol=2)
->>>>>>> jguinney-master
 
 ############################
 ## comparison of overlap
@@ -247,19 +201,6 @@ for(i in 1:(N-1)){
       pMatrix2 <- groupResults[[group2]][[ds]]
       cat(group1, group2, ds, "\n")
       if(!is.null(pMatrix1) & !is.null(pMatrix2)){
-<<<<<<< HEAD
-        if(nrow(pMatrix1) !=  nrow(pMatrix2)){ 
-          warning("Mismatch pmatrices.")
-          idxs <- match(rownames(pMatrix1), rownames(pMatrix2))
-          pMatrix1 <- pMatrix1[!is.na(idxs),]
-          pMatrix2 <- pMatrix2[na.omit(idxs),]
-        }
-        
-        tmp <- assessCrossGroupConcordance(pMatrix1,pMatrix2)
-        qts <- quantile(tmp$pvals, c(.05, .5, .95))
-        df <- data.frame(lower=qts[1],med=qts[2],high=qts[3],ds=ds, groups=paste(group1,":",group2,sep=""))
-        R[[length(R)+1]] <- df
-=======
         
         idxs <- match(clean.names(rownames(pMatrix1)), 
                       clean.names(rownames(pMatrix2)))
@@ -271,7 +212,6 @@ for(i in 1:(N-1)){
         #qts <- quantile(tmp$pvals, c(.05, .5, .95))
         #df <- data.frame(lower=qts[1],med=qts[2],high=qts[3],ds=ds, groups=paste(group1,":",group2,sep=""))
         #R[[length(R)+1]] <- df
->>>>>>> jguinney-master
         
         x <- sum(groupSubtypeSizes[0:(i-1)]) + 1
         y <- sum(groupSubtypeSizes[0:(j-1)]) + 1
@@ -317,9 +257,5 @@ Alldata <- apply(A, c(1,2), function(x){
   sum(x[names(weights)] * weights)
 })
 pdf(paste("evalPlots/clusterHeatmapByDataset/ALL.pdf",sep=""))
-<<<<<<< HEAD
-makeFrequencyHeatmap(Alldata,title="ALL",breaks=cs)
-=======
 makeConcordanceFrequencyHeatmap(Alldata,title="ALL",breaks=cs)
->>>>>>> jguinney-master
 dev.off()
