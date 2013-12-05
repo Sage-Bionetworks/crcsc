@@ -1,3 +1,4 @@
+library(data.table)
 u133plus2Map <- function(probeIds){mget(probeIds,hgu133plus2ENTREZID,ifnotfound=NA) }
 u133a2Map <- function(probeIds){mget(probeIds,hgu133a2ENTREZID,ifnotfound=NA) }
 symbolMap <- function(probeIds){mget(probeIds,org.Hs.egSYMBOL2EG,ifnotfound=NA) }
@@ -25,12 +26,16 @@ discoverprint_32627_Map <- function(probeIds){
   mget(geneNames,org.Hs.egSYMBOL2EG,ifnotfound=NA)
 }
 
-agendia_data_loader <- function(synId, filename){
+agendia_data_loader <- function(synId, filename=NULL){
   require(impute)
 
   file <- getFileLocation(synGet(synId))
-  con <- unz(file,filename=filename)
-  tbl <- read.table(con,sep="\t",header=TRUE,as.is=TRUE)
+  if(!is.null(filename)){
+    con <- unz(file,filename=filename)
+  }else{
+    con <- file(file)
+  }
+  tbl <- read.table(con,sep="\t",header=TRUE,as.is=TRUE,check.names=FALSE)
   duplicated.idxs <- which(duplicated(tbl$probe_id))
   if(length(duplicated.idxs) > 0){
     cat("Found ", length(duplicated.idxs), " duplicated probes. Removing...\n")
@@ -43,19 +48,18 @@ agendia_data_loader <- function(synId, filename){
 }
 
 fastLoad <- function(synId,sep="\t",...){
+  #tbl <- read.table(file,header=TRUE)
   file <- getFileLocation(synGet(synId))
-  
-  if(grepl(".*gz$",file)){ con <- gzfile(file)
-  }else if(grepl(".*zip$",file)){ con <- unz(file,...)
-  }else{ con <- open(file)}
-  
-  tmp <- read.table(con, sep=sep,nrows=1)
-  
-  ncolumns <- length(tmp)
-  colClasses <- c("character", rep("numeric",ncolumns-1))
-  tbl <- as.matrix(read.table(file,sep=sep,header=TRUE,row.names=1,colClasses=colClasses,comment=""))
-  close(file)
-  return (tbl)
+  header <- read.table(file,sep=sep,check.names=FALSE,nrow=1,as.is=TRUE)
+  df <- data.frame(fread(file,sep=sep,header=FALSE,skip=1),check.names=FALSE)
+  dm <- data.matrix(df[,-1])
+  rownames(dm) <- df[,1]
+  if(length(header) == ncol(dm)){
+    colnames(dm) <- header
+  }else{
+    colnames(dm) <- header[-1]
+  }
+  return (dm)
 }
 
 
@@ -92,7 +96,7 @@ toEntrez <- function(synId, synAnnId=NULL, entrezMapper=u133plus2Map,sep="\t", l
   
   if(!is.null(synAnnId)){
     file <- getFileLocation(synGet(synAnnId))
-    pdata <- read.table(file, sep="\t",header=TRUE,row.names=1)
+    pdata <- read.table(file, sep="\t",header=TRUE,row.names=1,check.names=FALSE)
     rownames(pdata) <- getGSMId(rownames(pdata))
     idxs <- match(colnames(bestExpr), rownames(pdata))
    
