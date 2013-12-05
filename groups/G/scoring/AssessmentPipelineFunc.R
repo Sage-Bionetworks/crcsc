@@ -1,12 +1,78 @@
 library(abind)
 library(ggplot2)
+library(reshape)
+
+globalConcordanceComparison <- function(groupResults){
+  
+  idxs <- groupMatch(lapply(groupResults, names))
+  commonDatasets <- names(groupResults[[1]])[idxs[[1]]]
+  commonDatasets <- setdiff(commonDatasets,"unknown")
+  
+  # reduce to common datasets among groups
+  # concatenate results across all datasets for each group
+  R <- lapply(groupResults,function(groupR){
+    groupR <- groupR[names(groupR) %in% commonDatasets]
+    R <- do.call("rbind",lapply(names(groupR), function(dsname){
+      dsR <- groupR[[dsname]]
+      #cat(length(colnames(dsR)),"\n")
+      rownames(dsR) <- paste(dsname,".",clean.names(rownames(dsR)),sep="")
+      return (dsR)
+    }))
+  })
+  
+  groupNames <- names(groupResults)
+  groupSubtypeNames <- lapply(groupNames, function(x){ 
+    subtypes <- colnames(groupResults[[x]][[1]])
+    paste(x, subtypes,sep=".")
+  })
+  names(groupSubtypeNames) <- groupNames
+  groupSubtypeSizes <- sapply(groupSubtypeNames, length)
+  Msize <- sum(groupSubtypeSizes)
+  allSubtypes <- unlist(groupSubtypeNames)
+  
+  A <- matrix(0, nrow=Msize, ncol=Msize,dimnames=list(allSubtypes,allSubtypes))
+  diag(A) <- 1
+  N <- length(groupNames)
+  for(i in 1:(N-1)){
+    group1 <- groupNames[i]
+    for(j in (i+1):N){
+      group2 <- groupNames[j]
+      
+      pMatrix1 <- R[[group1]]
+      pMatrix2 <- R[[group2]]
+      cat(group1, group2, "\n")
+      if(!is.null(pMatrix1) & !is.null(pMatrix2)){
+        
+        idxs <- match(clean.names(rownames(pMatrix1)), 
+                      clean.names(rownames(pMatrix2)))
+        pMatrix1 <- pMatrix1[!is.na(idxs),]
+        pMatrix2 <- pMatrix2[na.omit(idxs),]
+          
+          
+        tmp <- assessCrossGroupConcordance(pMatrix1,pMatrix2)
+       
+        x <- sum(groupSubtypeSizes[0:(i-1)]) + 1
+        y <- sum(groupSubtypeSizes[0:(j-1)]) + 1
+        xrange <- x:(x+groupSubtypeSizes[i]-1)
+        yrange <- y:(y+groupSubtypeSizes[j]-1)
+        A[xrange,yrange] <- tmp$perAtoB
+        A[yrange,xrange] <- t(tmp$perBtoA)
+      }
+    }
+  }
+  
+  ### show percent similarity heatmap
+  pdf(paste("evalPlots/clusterHeatmapByDataset/ALL_concat.pdf",sep=""),width=8,height=6)
+  makeConcordanceFrequencyHeatmap(A,title="ALL concatenated",breaks=cumsum(groupSubtypeSizes))
+  dev.off()
+}
 
 makeConcordanceFrequencyHeatmap <- function(A, title, breaks){
   m <- melt(A)
   
   p <- ggplot(m, aes(X1, X2)) + 
-    geom_tile(aes(fill = value),colour = "white") + 
-    scale_fill_gradient(low = "white",high = "steelblue")
+    geom_tile(aes(fill = value),colour = "white")
+    #scale_fill_gradient(low = "white",high = "steelblue")
   p <- p + geom_vline(xintercept=(breaks + .5), lwd=1)
   p <- p + geom_hline(yintercept=(breaks + .5), lwd=1)
   p <- p + xlab("") + 
@@ -19,91 +85,19 @@ makeConcordanceFrequencyHeatmap <- function(A, title, breaks){
 }
 
 clean.names <- function(x){
+  x <- gsub("(.*)\\.CEL.*","\\1",x)
   x <- gsub("^X(\\d.*)","\\1",x)
-  gsub("\\.","-", x)
+  x <- gsub("\\.","-", x)
+  gsub("^(GSM\\d*)\\D.*","\\1",x)
 }
 
 
-assessPathwaysKS <- function(exprDatasets, pMatrices){
-  
-  gs <- load.gmt.data(gmt.file.path="./c2.cp.v4.0.entrez.gmt")
-  cat("computing geneset idxs for each data set\n")
-  gsetIdxs <- lapply(names(exprDatasets), function(ds){
-    genes <- rownames(exprDatasets[[ds]])
-    lapply(gs, function(x){
-      which(genes %in% x) 
-    })
-  })
-  names(gsetIdxs) <- names(exprDatasets)
-  
-  cat("compute enrichment per pMatrix\n")
-  sapply(names(pMatrices), function(ds){
-    expr <- exprDatasets[[ds]]
-    pMatrix <- pMatrices[[ds]]
-    gsetIdxForDS <- gsetIdxs[[ds]]
-    idxs <- groupMatch(clean.names(colnames(expr)),clean.names(rownames(pMatrix)))
-    if(length(idxs[[1]]) == 0){
-      cat("No match between gsva es and pMatrix\n")
-      return()
-    }
-    expr.m <- expr[,idxs[[1]]]
-    pMatrix.m <- pMatrix[idxs[[2]],]
-    f <- factor(apply(pMatrix.m, 1, function(x) order(x,decreasing=TRUE)[1]))
-    
-    pvals <- sapply(levels(f), function(lvl){
-      mask <- lvl == f
-      ranks <- order(eBayes(lmFit(expr.m, model.matrix(~mask)))$p.value[,2])
-      sapply(gsetIdxForDS, function(idxs){
-        ks.test(ranks[idxs],ranks[-idxs])$p.value
-      })
-    })
-  })
-        
-}
 
-assessPathways <- function(gse, pMatrices){  
-    
-    # match datasets with pmatrices
-    idxs <- groupMatch(names(gse), names(pMatrices))
-    gse.m <- gse[idxs[[1]]]
-    pMatrices.m <- pMatrices[idxs[[2]]]
-    
-
-    gs.pvals <- sapply(names(gse.m), function(ds){
-      gsvaES <- gse.m[[ds]]
-      pMatrix <- pMatrices[[ds]]
-      idxs <- groupMatch(clean.names(colnames(gsvaES)),clean.names(rownames(pMatrix)))
-      if(length(idxs[[1]]) == 0){
-        cat("No match between gsva es and pMatrix\n")
-        return()
-      }
-      gsvaES.m <- gsvaES[,idxs[[1]]]
-      pMatrix.m <- pMatrix[idxs[[2]],]
-      
-      # for speed, we select max prob rather than sample
-      f <- factor(apply(pMatrix.m, 1, function(x) order(x,decreasing=TRUE)[1]))    
-      fit <- eBayes(lmFit(gsvaES, model.matrix(~f)))
-      pvals <- topTableF(fit,sort="none",n=Inf)$adj.P.Val
-  
-      names(pvals) <- rownames(gsvaES.m)
-      #apply(pvals, 1, median)
-    })
-    
-    # weight by data set size
-    tmp <- sqrt(sapply(gse.m, ncol))
-    weights <- tmp / sum(tmp)
-    
-    meta_pvals <- apply(gs.pvals, 1, function(p) Stouffer.test(p,weights) )
-}
 
 assessPhenotypes <- function(vObj, pMatrix){
   #browser()
   phenotypeTbl <- vObj$data
   
-  clean.names <- function(x){
-    x <- gsub("^X(\\d.*)","\\1",x)
-    gsub("\\.","-", x)
-  }
   
   idxs <- groupMatch(clean.names(rownames(phenotypeTbl)),clean.names(rownames(pMatrix)))
   if(length(idxs[[1]]) == 0){
@@ -121,12 +115,12 @@ assessPhenotypes <- function(vObj, pMatrix){
   })
   continuousResults <- lapply(vObj$continuousFields, function(fieldName){
     cat(fieldName,"\n")
-    continuousPhenotype <- phenotypeTbl.m[, fieldName]
+    continuousPhenotype <- as.numeric(phenotypeTbl.m[, fieldName])
     mask <- !is.na(continuousPhenotype)
     test.continuous(continuousPhenotype[mask], pMatrix.m[mask,])
   })
   censoredResults <- lapply(vObj$censoredFields, function(pair){
-    time <- phenotypeTbl.m[, pair[1]]
+    time <- as.numeric(phenotypeTbl.m[, pair[1]])
     status <- phenotypeTbl.m[, pair[2]]
     mask <- !is.na(time) & !is.na(status)
     test.censored(Surv(time[mask],status[mask]), pMatrix.m[mask,])
