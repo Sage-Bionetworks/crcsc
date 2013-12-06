@@ -51,6 +51,7 @@ publicExprList = list(
 		gse13294=list(synId="syn2177894", is.logr=FALSE, annSynId="syn2177895"),
 		gse14333=list(synId="syn2181079", is.logr=FALSE, annSynId="syn2181006"),
 		gse15960=list(synId="syn2177199", is.logr=FALSE, annSynId="syn2177200"),
+		gse17536=list(synId="syn2178137", is.logr=FALSE, annSynId="syn2178136"),
 		gse17537=list(synId="syn2178128", is.logr=FALSE, annSynId="syn2178129"),
 		gse20916=list(synId="syn2177899", is.logr=FALSE, annSynId="syn2177898"),
 		gse2109=list(synId="syn2177169", is.logr=FALSE, annSynId="syn2177168"),
