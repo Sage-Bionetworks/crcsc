@@ -10,18 +10,19 @@
 ##   dataset: dataset to analyze
 ##   group:   group to pull results from
 #####
-# myArgs <- commandArgs(trailingOnly=T)
-# ds <- myArgs[1]
-# group <- myArgs[2]
+myArgs <- commandArgs(trailingOnly=T)
+ds <- myArgs[1]
+group <- myArgs[2]
 
-ds <- "tcga_rnaseq"
-group <- "GroupG"
+# ds <- "tcga_rnaseq"
+# group <- "GroupG"
 
 options(stringsAsFactors=F)
 
 require(synapseClient)
 require(rGithubClient)
 require(affy)
+require(limma)
 require(pamr)
 require(hgu133plus2.db)
 require(hgu133a2.db)
@@ -43,9 +44,10 @@ code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
 
 ## SOURCE CODE TO READ IN DATA
 sourceRepoFile(crcRepo, "evals/getDataFuncs.R")
-code3 <- getPermlink(crcRepo, "evals/getExprPhenoData.R")
+code3 <- getPermlink(crcRepo, "evals/getDataFuncs.R")
 
-
+## THIS SCRIPT
+thisCode <- getPermlink(crcRepo, "evals/evalGenesets.R")
 
 
 #####
@@ -53,13 +55,8 @@ code3 <- getPermlink(crcRepo, "evals/getExprPhenoData.R")
 #####
 
 ## GET GROUP RESULTS FOR SPECIFIED GROUP
-groupResults <- getGroupResults(group)
-
-if( !any(names(groupResults) == ds) ){
-  stop(paste("Group ", group, " did not provide results for ", dataset, sep=""))
-}
-
-pmat <- groupResults[[ds]]
+grpResId <- getGroupResultId(group, ds)
+pmat <- getGroupResult(grpResId, group)
 nSubtypes <- ncol(pmat)
 st <- apply(pmat, 1, function(x){
   ww <- x==max(x)
@@ -86,26 +83,69 @@ d <- d[, rownames(st)]
 d <- d[apply(exprs(d), 1, sd) != 0, ]
 
 ## GET THE GENESETS
-genesets <- read.delim(getFileLocation(synGet("syn2319124")), as.is=T, header=F, row.names=1)
-genesets <- apply(genesets, 1, function(x){
-  x <- x[-1]
-  x <- x[x != ""]
-  names(x) <- NULL
+genesets <- load.gmt.data(getFileLocation(synGet("syn2321865")))
+genesets <- lapply(genesets, function(x){
+  x <- x[ x != "" ]
   x <- unlist(symbolMap(x))
-  x <- x[!is.na(x)]
+  x <- x[ !is.na(x) ]
   intersect(x, featureNames(d))
 })
 
 
+#####
+## FIRST JUST RUN LMFIT ON EXPRESSION DATA FOR EACH SUBTYPE
+#####
+diffExprResults <- sapply(as.list(1:nSubtypes), function(i){
+  resp <- st[, i]
+  fit <- lmFit(d, design=model.matrix(~ factor(resp)))
+  fit <- eBayes(fit)
+})
+
+diffExprPvalues <- sapply(diffExprResults, function(x){
+  x$p.value[, "factor(resp)1"]
+})
+rownames(diffExprPvalues) <- featureNames(d)
+colnames(diffExprPvalues) <- colnames(st)
+
+diffExprFCs <- sapply(diffExprResults, function(x){
+  2^x$coefficients[, "factor(resp)1"]
+})
+rownames(diffExprFCs) <- featureNames(d)
+colnames(diffExprFCs) <- colnames(st)
+
+pvalFile <- file.path(tempdir(), paste("diffExprPvalues-", group, "-", ds, ".tsv", sep=""))
+write.table(diffExprPvalues, file=pvalFile, quote=F, sep="\t", col.names=NA)
+pvalSyn <- synStore(File(path=pvalFile, parentId="syn2321872", group=group, dataset=ds, method="eBayes", stat="pvalue"), 
+                    activity=Activity(name="differential expression",
+                                      used=list(
+                                        list(name=basename(code1), url=code1, wasExecuted=F),
+                                        list(name=basename(code2), url=code2, wasExecuted=F),
+                                        list(name=basename(code3), url=code3, wasExecuted=F),
+                                        list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                        list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                        list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                      )))
+
+fcFile <- file.path(tempdir(), paste("diffExprFCs-", group, "-", ds, ".tsv", sep=""))
+write.table(diffExprFCs, file=fcFile, quote=F, sep="\t", col.names=NA)
+fcSyn <- synStore(File(path=fcFile, parentId="syn2321872", group=group, dataset=ds, method="eBayes", stat="fc"), 
+                  activity=Activity(name="differential expression",
+                                    used=list(
+                                      list(name=basename(code1), url=code1, wasExecuted=F),
+                                      list(name=basename(code2), url=code2, wasExecuted=F),
+                                      list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                      list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                      list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                    )))
 
 
 
 #####
 ## RUN GENESET EVALUATION
 #####
-# respList <- list()
 
-## GLOBAL TEST
+## GLOBAL TEST (NON COMPETITIVE)
 gtResults <- sapply(as.list(1:nSubtypes), function(i){
   resp <- st[, i]
   op <- sapply(genesets, function(gs){
@@ -116,6 +156,20 @@ gtResults <- sapply(as.list(1:nSubtypes), function(i){
   op
 })
 colnames(gtResults) <- colnames(st)
+
+gtFile <- file.path(tempdir(), paste("gt-", group, "-", ds, ".tsv", sep=""))
+write.table(gtResults, file=gtFile, quote=F, sep="\t", col.names=NA)
+gtSyn <- synStore(File(path=gtFile, parentId="syn2321872", group=group, dataset=ds, method="globaltest"), 
+                  activity=Activity(name="geneset evaluation",
+                                    used=list(
+                                      list(name=basename(code1), url=code1, wasExecuted=F),
+                                      list(name=basename(code2), url=code2, wasExecuted=F),
+                                      list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                      list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                      list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                      list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                    )))
 
 ## TUKEY NON COMPETITIVE TEST
 set.seed(20140101)
@@ -148,6 +202,19 @@ tukResults <- sapply(as.list(1:nSubtypes), function(i){
 })
 colnames(tukResults) <- colnames(st)
 
+tukFile <- file.path(tempdir(), paste("tuk-", group, "-", ds, ".tsv", sep=""))
+write.table(tukResults, file=tukFile, quote=F, sep="\t", col.names=NA)
+tukSyn <- synStore(File(path=tukFile, parentId="syn2321872", group=group, dataset=ds, method="tukey"), 
+                   activity=Activity(name="geneset evaluation",
+                                     used=list(
+                                       list(name=basename(code1), url=code1, wasExecuted=F),
+                                       list(name=basename(code2), url=code2, wasExecuted=F),
+                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                     )))
 
 
 ## GSA
@@ -165,43 +232,51 @@ gsaHiResults <- sapply(gsaResults, function(r){
 rownames(gsaHiResults) <- names(genesets)
 colnames(gsaHiResults) <- colnames(st)
 
-gsaLoResults <- sapply(gsaResults, function(r){
-  r$pvalues.lo
-})
-rownames(gsaLoResults) <- names(genesets)
-colnames(gsaLoResults) <- colnames(st)
+# gsaLoResults <- sapply(gsaResults, function(r){
+#   r$pvalues.lo
+# })
+# rownames(gsaLoResults) <- names(genesets)
+# colnames(gsaLoResults) <- colnames(st)
+
+gsaFile <- file.path(tempdir(), paste("gsa-", group, "-", ds, ".tsv", sep=""))
+write.table(gsaHiResults, file=gsaFile, quote=F, sep="\t", col.names=NA)
+gsaSyn <- synStore(File(path=gsaFile, parentId="syn2321872", group=group, dataset=ds, method="gsa"), 
+                   activity=Activity(name="geneset evaluation",
+                                     used=list(
+                                       list(name=basename(code1), url=code1, wasExecuted=F),
+                                       list(name=basename(code2), url=code2, wasExecuted=F),
+                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                     )))
 
 
 
 ## KS TEST
 ## DIRECTION DOES NOT MATTER - ONLY DIFFERING SIGNIFICANCE DISTRIBUTIONS
-diffExpResults <- lapply(as.list(1:nSubtypes), function(i){
-  resp <- st[, i]
-  op <- apply(exprs(d), 1, function(y){
-    summary(lm(y~resp))$coefficients[2, c("Estimate", "Pr(>|t|)")]
-  })
-  op
-})
-diffExpFCs <- sapply(diffExpResults, function(x){
-  2^as.numeric(x[1, ])
-})
-rownames(diffExpFCs) <- featureNames(d)
-colnames(diffExpFCs) <- colnames(st)
-
-diffExpPvalues <- sapply(diffExpResults, function(x){
-  as.numeric(x[2, ])
-})
-rownames(diffExpPvalues) <- featureNames(d)
-colnames(diffExpPvalues) <- colnames(st)
-
-
 ksResults <- sapply(as.list(1:nSubtypes), function(i){
   op <- sapply(genesets, function(gs){
-    ks.test(x=diffExpPvalues[which(rownames(diffExpPvalues) %in% gs), i],
-            y=diffExpPvalues[-which(rownames(diffExpPvalues) %in% gs), i],
+    ks.test(x=diffExprPvalues[which(rownames(diffExprPvalues) %in% gs), i],
+            y=diffExprPvalues[-which(rownames(diffExprPvalues) %in% gs), i],
             alternative="less")$p.value
   })
 })
 colnames(ksResults) <- colnames(st)
+
+ksFile <- file.path(tempdir(), paste("ks-", group, "-", ds, ".tsv", sep=""))
+write.table(ksResults, file=ksFile, quote=F, sep="\t", col.names=NA)
+ksSyn <- synStore(File(path=ksFile, parentId="syn2321872", group=group, dataset=ds, method="ks"), 
+                  activity=Activity(name="geneset evaluation",
+                                    used=list(
+                                      list(name=basename(code1), url=code1, wasExecuted=F),
+                                      list(name=basename(code2), url=code2, wasExecuted=F),
+                                      list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(entity=synGet(coreDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                      list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                      list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                      list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                    )))
 
 
