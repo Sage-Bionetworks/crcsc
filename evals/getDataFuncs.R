@@ -415,30 +415,28 @@ groupEHandler <- function(M){
   M[,-which(colnames(M) == "CCS")]
 }
 
-
-getGroupResults <- function(groupId){
-  parentId <- groupFolders[[groupId]]
+getGroupResultId <- function(group, ds){
+  parentId <- groupFolders[[group]]
   tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="',parentId,'"',sep=""))
-  N <- nrow(tmp)
-  pmatrices <- lapply(tmp$entity.id, function(synId){
-    cat(groupId, synId, "\n")
-    file <- synGet(synId)@filePath
-    sep <- ifelse(grepl("\\.csv$",file),",","\t")
-    pMatrix <- read.table(file, sep=sep,header=T,as.is=T,row.names=1,check.names=FALSE)
-    
-    pMatrix <- switch(groupId,
-                      GroupB = groupBHandler(pMatrix),
-                      GroupD = groupDHandler(pMatrix),
-                      GroupE = groupEHandler(pMatrix),
-                      pMatrix)
-    #rownames(pMatrix) <- clean.names(rownames(pMatrix))
-    return (pMatrix)
-  })
   
   synIds <- sapply(tmp$entity.name, function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
-  names(pmatrices) <- sapply(synIds, getDatanameForExprSynId)
+  these <- sapply(synIds, getDatanameForExprSynId)
   
-  return (pmatrices)
+  tmp$entity.id[ which(these == ds) ]
+}
+
+getGroupResult <- function(synId, groupId){
+  file <- synGet(synId)@filePath
+  sep <- ifelse(grepl("\\.csv$", file), ",", "\t")
+  pMatrix <- read.table(file, sep=sep, header=T, as.is=T, row.names=1, check.names=FALSE)
+  
+  pMatrix <- switch(groupId,
+                    GroupB = groupBHandler(pMatrix),
+                    GroupD = groupDHandler(pMatrix),
+                    GroupE = groupEHandler(pMatrix),
+                    pMatrix)
+  #rownames(pMatrix) <- clean.names(rownames(pMatrix))
+  return(pMatrix)
 }
 
 
