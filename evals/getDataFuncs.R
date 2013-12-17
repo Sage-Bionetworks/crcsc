@@ -59,7 +59,7 @@ getDatanameForExprSynId <- function(synId){
 
 groupFolders <- list(GroupA="syn2274064",
                      GroupB="syn2274065",
-#                      GroupC="syn2274066",
+                     GroupC="syn2274066",
                      GroupD="syn2274067",
                      GroupE="syn2274069",
                      GroupF="syn2274068",
@@ -417,16 +417,16 @@ groupEHandler <- function(M){
 
 getGroupResultId <- function(group, ds){
   parentId <- groupFolders[[group]]
-  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="',parentId,'"',sep=""))
+  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', parentId, '"', sep=""))
   
-  synIds <- sapply(tmp$entity.name, function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
+  synIds <- lapply(as.list(tmp$entity.name), function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
   these <- sapply(synIds, getDatanameForExprSynId)
   
   tmp$entity.id[ which(these == ds) ]
 }
 
 getGroupResult <- function(synId, groupId){
-  file <- synGet(synId)@filePath
+  file <- getFileLocation(synGet(synId))
   sep <- ifelse(grepl("\\.csv$", file), ",", "\t")
   pMatrix <- read.table(file, sep=sep, header=T, as.is=T, row.names=1, check.names=FALSE)
   
