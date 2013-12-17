@@ -3,7 +3,7 @@
 #####
 ## SOURCE IN SHARED .Rprofile WHICH CONTAINS SYNAPSE LOGIN HOOK,
 ## SETS COMMON SYNAPSE CACHE FOR ALL WORKERS, AND SETS COMMON LIBPATH
-# source("/shared/code/R/.Rprofile")
+source("/shared/code/R/.Rprofile")
 #####
 ## TAKES FOR ARGUMENTS (PASSED FROM sgeKickoff.R)
 #####
@@ -23,7 +23,6 @@ require(synapseClient)
 require(rGithubClient)
 require(affy)
 require(limma)
-require(pamr)
 require(hgu133plus2.db)
 require(hgu133a2.db)
 require(org.Hs.eg.db)
