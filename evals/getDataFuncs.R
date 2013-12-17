@@ -45,7 +45,11 @@ publicDatasets <- list(gse10961=dataset(exprSynId="syn2177194",phenoSynId="syn21
                        gse4183=dataset(exprSynId="syn2177187",phenoSynId="syn2177188"),
                        gse8671=dataset(exprSynId="syn2181088",phenoSynId="syn2181090"))
 
-allDatasets <- c(coreDatasets, publicDatasets)
+cellLineDatasets <- list(ccle=dataset(exprSynId="syn2292137"),
+                         sanger=dataset(exprSynId="syn2181097"),
+                         gsk=dataset(exprSynId="syn2181084"))
+
+allDatasets <- c(coreDatasets, publicDatasets, cellLineDatasets)
 
 getDatanameForExprSynId <- function(synId){
   idx <- which(sapply(allDatasets, function(ds) { ds$exprSynId==synId } ))
@@ -59,8 +63,8 @@ getDatanameForExprSynId <- function(synId){
 
 groupFolders <- list(GroupA="syn2274064",
                      GroupB="syn2274065",
-                     GroupC="syn2274066",
-                     GroupD="syn2274067",
+#                      GroupC="syn2274066",
+                     GroupD="syn2319015",
                      GroupE="syn2274069",
                      GroupF="syn2274068",
                      GroupG="syn2274063")
@@ -395,17 +399,28 @@ getExprSet <- function(ds){
 #####
 ## FUNCTIONS TO PULL GROUP INFORMATION
 #####
-groupBHandler <- function(M){
-  tmp <- abs(M[, 1:6])
-  v <- apply(tmp, 1, sum)
-  1 - sweep(tmp,MARGIN=1,v,"/")
+cit.changeRange <- function (v, newmin = 0, newmax = 1){
+  oldmin <- min(v, na.rm = TRUE)
+  oldmax <- max(v, na.rm = TRUE)
+  newmin + ((newmax - newmin) * (v - oldmin)/(oldmax - oldmin))
 }
+
+groupBHandler <- function(m){ 
+  df <- as.data.frame(t(apply(m[,1:6],1,
+                              function(z){
+                                x<-1-cit.changeRange(z);
+                                x/sum(x)}))) #NB: lower value (0)=best class
+  colnames(df) <- gsub("distTo(.*)","\\1", colnames(df))
+  df
+}
+
 groupDHandler <- function(M){
-  foo <- M[,1]
-  pMatrix <- model.matrix(~0 + foo)
-  colnames(pMatrix) <- gsub("foo(.*)","\\1",colnames(pMatrix))
-  rownames(pMatrix) <- rownames(M)
-  pMatrix
+  df <- as.data.frame(t(apply(M,1,
+                              function(z){
+                                x<-cit.changeRange(z);
+                                x/sum(x)})))
+  colnames(df) <- colnames(M)
+  df
 }
 groupEHandler <- function(M){
   if("sample_names" %in% colnames(M)){
@@ -414,6 +429,7 @@ groupEHandler <- function(M){
   }
   M[,-which(colnames(M) == "CCS")]
 }
+
 
 getGroupResultId <- function(group, ds){
   parentId <- groupFolders[[group]]
