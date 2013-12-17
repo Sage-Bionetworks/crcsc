@@ -73,12 +73,13 @@ st <- t(st)
 if( ds == "tcga_rnaseq" ){
   rownames(st) <- gsub(".", "-", rownames(st), fixed=T)
 }
+rownames(st) <- gsub(".CEL", "", rownames(st), fixed=T)
 colnames(st) <- colnames(pmat)
 
 ## GET THE EXPRESSION DATA FOR THIS DATASET
 ## SUBSET TO AND ORDER LIKE THE SAMPLES IN THE SUBTYPE MATRIX
 d <- getExprSet(ds)
-d <- d[, rownames(st)]
+d <- d[, rownames(st) ]
 d <- d[apply(exprs(d), 1, sd) != 0, ]
 
 ## GET THE GENESETS
@@ -170,51 +171,6 @@ gtSyn <- synStore(File(path=gtFile, parentId="syn2321872", group=group, dataset=
                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                     )))
 
-## TUKEY NON COMPETITIVE TEST
-set.seed(20140101)
-tukResults <- sapply(as.list(1:nSubtypes), function(i){
-  resp <- st[, i]
-  
-  op <- sapply(genesets, function(gs){
-    theseGenes <- exprs(d)[gs, ]
-    mgd <- apply(theseGenes, 1, function(y){
-      summary(lm(y~resp))$coefficients[2, "Pr(>|t|)"]
-    })
-    mgd <- sum(mgd<0.05)
-    
-    perms <- numeric()
-    for(j in 1:1000){
-      ran <- rnorm(length(resp))
-      a <- apply(theseGenes, 1, function(y){
-        summary(lm(y~resp[order(ran)]))$coefficients[2, "Pr(>|t|)"]
-      })
-      perms <- c(perms, sum(a<0.05))
-      if(j/25 == floor(j/25)){
-        cat(gs, " - permutation ", j, "\n")
-      }
-    }
-    pval <- sum(perms>mgd)/length(perms)
-    pval
-  })
-  names(op) <- names(genesets)
-  op
-})
-colnames(tukResults) <- colnames(st)
-
-tukFile <- file.path(tempdir(), paste("tuk-", group, "-", ds, ".tsv", sep=""))
-write.table(tukResults, file=tukFile, quote=F, sep="\t", col.names=NA)
-tukSyn <- synStore(File(path=tukFile, parentId="syn2321872", group=group, dataset=ds, method="tukey"), 
-                   activity=Activity(name="geneset evaluation",
-                                     used=list(
-                                       list(name=basename(code1), url=code1, wasExecuted=F),
-                                       list(name=basename(code2), url=code2, wasExecuted=F),
-                                       list(name=basename(code3), url=code3, wasExecuted=F),
-                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
-                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
-                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
-                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
-                                     )))
-
 
 ## GSA
 ## RESULTS AVAILABLE FOR BOTH HI AND LO
@@ -277,5 +233,50 @@ ksSyn <- synStore(File(path=ksFile, parentId="syn2321872", group=group, dataset=
                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                     )))
+
+## TUKEY NON COMPETITIVE TEST
+set.seed(20140101)
+tukResults <- sapply(as.list(1:nSubtypes), function(i){
+  resp <- st[, i]
+  
+  op <- sapply(genesets, function(gs){
+    theseGenes <- exprs(d)[gs, ]
+    mgd <- apply(theseGenes, 1, function(y){
+      summary(lm(y~resp))$coefficients[2, "Pr(>|t|)"]
+    })
+    mgd <- sum(mgd<0.05)
+    
+    perms <- numeric()
+    for(j in 1:1000){
+      ran <- rnorm(length(resp))
+      a <- apply(theseGenes, 1, function(y){
+        summary(lm(y~resp[order(ran)]))$coefficients[2, "Pr(>|t|)"]
+      })
+      perms <- c(perms, sum(a<0.05))
+      if(j/25 == floor(j/25)){
+        cat(gs, " - permutation ", j, "\n")
+      }
+    }
+    pval <- sum(perms>mgd)/length(perms)
+    pval
+  })
+  names(op) <- names(genesets)
+  op
+})
+colnames(tukResults) <- colnames(st)
+
+tukFile <- file.path(tempdir(), paste("tuk-", group, "-", ds, ".tsv", sep=""))
+write.table(tukResults, file=tukFile, quote=F, sep="\t", col.names=NA)
+tukSyn <- synStore(File(path=tukFile, parentId="syn2321872", group=group, dataset=ds, method="tukey"), 
+                   activity=Activity(name="geneset evaluation",
+                                     used=list(
+                                       list(name=basename(code1), url=code1, wasExecuted=F),
+                                       list(name=basename(code2), url=code2, wasExecuted=F),
+                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                     )))
 
 
