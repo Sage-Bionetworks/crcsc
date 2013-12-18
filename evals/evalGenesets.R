@@ -73,7 +73,10 @@ st <- t(st)
 if( ds == "tcga_rnaseq" ){
   rownames(st) <- gsub(".", "-", rownames(st), fixed=T)
 }
-rownames(st) <- gsub(".CEL", "", rownames(st), fixed=T)
+## FOR GEO DATASETS
+if( ds %in% names(publicDatasets) ){
+  rownames(st) <- gsub(".CEL", "", rownames(st), fixed=T)
+}
 colnames(st) <- colnames(pmat)
 
 ## GET THE EXPRESSION DATA FOR THIS DATASET
@@ -234,27 +237,42 @@ ksSyn <- synStore(File(path=ksFile, parentId="syn2321872", group=group, dataset=
                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                     )))
 
+diffExprResults <- sapply(as.list(1:nSubtypes), function(i){
+  resp <- st[, i]
+  fit <- lmFit(d, design=model.matrix(~ factor(resp)))
+  fit <- eBayes(fit)
+})
+
+diffExprPvalues <- sapply(diffExprResults, function(x){
+  x$p.value[, "factor(resp)1"]
+})
+rownames(diffExprPvalues) <- featureNames(d)
+colnames(diffExprPvalues) <- colnames(st)
+
 ## TUKEY NON COMPETITIVE TEST
 set.seed(20140101)
 tukResults <- sapply(as.list(1:nSubtypes), function(i){
   resp <- st[, i]
   
   op <- sapply(genesets, function(gs){
-    theseGenes <- exprs(d)[gs, ]
-    mgd <- apply(theseGenes, 1, function(y){
-      summary(lm(y~resp))$coefficients[2, "Pr(>|t|)"]
-    })
+    theseGenes <- d[gs, ]
+    fit <- lmFit(theseGenes, design=model.matrix(~ factor(resp)))
+    fit <- eBayes(fit)
+    
+    mgd <- fit$p.value[, "factor(resp)1"]
     mgd <- sum(mgd<0.05)
     
     perms <- numeric()
     for(j in 1:1000){
       ran <- rnorm(length(resp))
-      a <- apply(theseGenes, 1, function(y){
-        summary(lm(y~resp[order(ran)]))$coefficients[2, "Pr(>|t|)"]
-      })
+      resp2 <- resp[order(ran)]
+      fit2 <- lmFit(theseGenes, design=model.matrix(~ factor(resp2)))
+      fit2 <- eBayes(fit2)
+      a <- fit2$p.value[, "factor(resp2)1"]
+      
       perms <- c(perms, sum(a<0.05))
       if(j/25 == floor(j/25)){
-        cat(gs, " - permutation ", j, "\n")
+        cat("permutation ", j, "\n")
       }
     }
     pval <- sum(perms>mgd)/length(perms)
