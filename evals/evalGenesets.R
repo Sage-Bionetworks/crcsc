@@ -118,7 +118,7 @@ colnames(diffExprFCs) <- colnames(st)
 
 pvalFile <- file.path(tempdir(), paste("diffExprPvalues-", group, "-", ds, ".tsv", sep=""))
 write.table(diffExprPvalues, file=pvalFile, quote=F, sep="\t", col.names=NA)
-pvalSyn <- synStore(File(path=pvalFile, parentId="syn2321872", group=group, dataset=ds, method="eBayes", stat="pvalue"), 
+pvalSyn <- synStore(File(path=pvalFile, parentId="syn2322802", group=group, dataset=ds, method="eBayes", stat="pvalue"), 
                     activity=Activity(name="differential expression",
                                       used=list(
                                         list(name=basename(code1), url=code1, wasExecuted=F),
@@ -131,7 +131,7 @@ pvalSyn <- synStore(File(path=pvalFile, parentId="syn2321872", group=group, data
 
 fcFile <- file.path(tempdir(), paste("diffExprFCs-", group, "-", ds, ".tsv", sep=""))
 write.table(diffExprFCs, file=fcFile, quote=F, sep="\t", col.names=NA)
-fcSyn <- synStore(File(path=fcFile, parentId="syn2321872", group=group, dataset=ds, method="eBayes", stat="fc"), 
+fcSyn <- synStore(File(path=fcFile, parentId="syn2322802", group=group, dataset=ds, method="eBayes", stat="fc"), 
                   activity=Activity(name="differential expression",
                                     used=list(
                                       list(name=basename(code1), url=code1, wasExecuted=F),
@@ -162,7 +162,7 @@ colnames(gtResults) <- colnames(st)
 
 gtFile <- file.path(tempdir(), paste("gt-", group, "-", ds, ".tsv", sep=""))
 write.table(gtResults, file=gtFile, quote=F, sep="\t", col.names=NA)
-gtSyn <- synStore(File(path=gtFile, parentId="syn2321872", group=group, dataset=ds, method="globaltest"), 
+gtSyn <- synStore(File(path=gtFile, parentId="syn2322802", group=group, dataset=ds, method="globaltest"), 
                   activity=Activity(name="geneset evaluation",
                                     used=list(
                                       list(name=basename(code1), url=code1, wasExecuted=F),
@@ -198,7 +198,7 @@ colnames(gsaHiResults) <- colnames(st)
 
 gsaFile <- file.path(tempdir(), paste("gsa-", group, "-", ds, ".tsv", sep=""))
 write.table(gsaHiResults, file=gsaFile, quote=F, sep="\t", col.names=NA)
-gsaSyn <- synStore(File(path=gsaFile, parentId="syn2321872", group=group, dataset=ds, method="gsa"), 
+gsaSyn <- synStore(File(path=gsaFile, parentId="syn2322802", group=group, dataset=ds, method="gsa"), 
                    activity=Activity(name="geneset evaluation",
                                      used=list(
                                        list(name=basename(code1), url=code1, wasExecuted=F),
@@ -225,7 +225,7 @@ colnames(ksResults) <- colnames(st)
 
 ksFile <- file.path(tempdir(), paste("ks-", group, "-", ds, ".tsv", sep=""))
 write.table(ksResults, file=ksFile, quote=F, sep="\t", col.names=NA)
-ksSyn <- synStore(File(path=ksFile, parentId="syn2321872", group=group, dataset=ds, method="ks"), 
+ksSyn <- synStore(File(path=ksFile, parentId="syn2322802", group=group, dataset=ds, method="ks"), 
                   activity=Activity(name="geneset evaluation",
                                     used=list(
                                       list(name=basename(code1), url=code1, wasExecuted=F),
@@ -285,7 +285,7 @@ colnames(tukResults) <- colnames(st)
 
 tukFile <- file.path(tempdir(), paste("tuk-", group, "-", ds, ".tsv", sep=""))
 write.table(tukResults, file=tukFile, quote=F, sep="\t", col.names=NA)
-tukSyn <- synStore(File(path=tukFile, parentId="syn2321872", group=group, dataset=ds, method="tukey"), 
+tukSyn <- synStore(File(path=tukFile, parentId="syn2322802", group=group, dataset=ds, method="tukey"), 
                    activity=Activity(name="geneset evaluation",
                                      used=list(
                                        list(name=basename(code1), url=code1, wasExecuted=F),
