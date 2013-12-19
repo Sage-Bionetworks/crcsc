@@ -28,7 +28,7 @@ coreDatasets <- list(amc_ajccii=dataset(exprSynId="syn2159423",phenoSynId="syn21
                      agendia_gse42284=dataset(exprSynId="syn2192792",phenoSynId="syn2192794"),
                      agendia_ico208=dataset(exprSynId="syn2192796",phenoSynId="syn2289240"),
                      agendia_vhb70=dataset(exprSynId="syn2192799",phenoSynId="syn2289239"),
-                     mdanderson=dataset(exprSynId="syn223387",phenoSynId="syn2290781"))
+                     mdanderson=dataset(exprSynId="syn2233387",phenoSynId="syn2290781"))
 
 publicDatasets <- list(gse10961=dataset(exprSynId="syn2177194",phenoSynId="syn2177195"),
                        gse13067=dataset(exprSynId="syn2177888",phenoSynId="syn2177889"),
@@ -46,10 +46,11 @@ publicDatasets <- list(gse10961=dataset(exprSynId="syn2177194",phenoSynId="syn21
                        gse8671=dataset(exprSynId="syn2181088",phenoSynId="syn2181090"))
 
 cellLineDatasets <- list(ccle=dataset(exprSynId="syn2292137"),
-                         sanger=dataset(exprSynId="syn2181097"),
-                         gsk=dataset(exprSynId="syn2181084"))
+                      sanger=dataset(exprSynId="syn2181097"),
+                      gsk=dataset(exprSynId="syn2181084"));
 
-allDatasets <- c(coreDatasets, publicDatasets, cellLineDatasets)
+patientDatasets <- c(coreDatasets, publicDatasets)
+allDatasets <- c(patientDatasets, cellLineDatasets)
 
 getDatanameForExprSynId <- function(synId){
   idx <- which(sapply(allDatasets, function(ds) { ds$exprSynId==synId } ))
@@ -68,7 +69,6 @@ groupFolders <- list(GroupA="syn2274064",
                      GroupE="syn2274069",
                      GroupF="syn2274068",
                      GroupG="syn2274063")
-
 
 #####
 ## FUNCTION TO GET PHENOTYPE DATA BY PROVIDING DATASET NAME
@@ -177,14 +177,14 @@ getPhenoObjs <- function(ds){
            rownames(tmp) <- tmp$ID
            tmp$os.event <- tmp$os.status == "dead"
            tmp$rfs.event <- tmp$rfs.status == "recurred"
+           tmp$kras = c("mut","wt")[factor(tmp$KRAS.mut == 'wt')]
+           tmp$msi = c("MSI-H","MSS")[factor(tmp$Microsatellite != "MSI")]
            new("phenoObj",
                data=tmp,
                discreteFields=list(gender="Gender",
-                                   tstage="Tstage",
-                                   nstage="Nstage",
-                                   location="Tumor.location",
-                                   msi="Microsatellite",
-                                   kras="KRAS.mut",
+                                   location="Tumor.location2",
+                                   msi="msi",
+                                   kras="kras",
                                    braf="BRAF.mut"),
                continuousFields=list(age="Age"),
                censoredFields=list(os=c("os.time","os.event"),
@@ -210,7 +210,8 @@ getPhenoObjs <- function(ds){
                              header=T,na.strings=c("NA","NaN",""),check.names=FALSE,)
            new("phenoObj", data=tmp,
                discreteFields=list(gender="gender",
-                                   stage="stage"),
+                                   stage="stage",
+                                   location="tumorLocation"),
                continuousFields=list(age="age"),
                censoredFields=list(os=c("osMo","osStat")))
          })(),
@@ -236,15 +237,7 @@ getPhenoObjs <- function(ds){
                                    rfs=c("Relapse.free.days.from.surgery.date","rfs.event")))
          })(),
          
-         gse10961=(function(){
-           tmp <- read.table(synGet(allDatasets$gse10961$phenoSynId)@filePath, sep="\t",
-                             header=T,na.strings=c("NA","NaN",""),check.names=FALSE)
-           return (new("phenoObj", data=tmp,
-                       discreteFields=list(),
-                       continuousFields=list(),
-                       censoredFields=list()))
-         })(),
-         gse13067=(function(){
+           gse13067=(function(){
            tmp <- read.table(synGet(allDatasets$gse13067$phenoSynId)@filePath, sep="\t",
                              header=T,na.strings=c("NA","NaN",""),check.names=FALSE)
            return (new("phenoObj", data=tmp,
@@ -335,15 +328,7 @@ getPhenoObjs <- function(ds){
                        continuousFields=list(age="age"),
                        censoredFields=list()))
          })(), 
-         gse4183=(function(){
-           tmp <- read.table(synGet(allDatasets$gse4183$phenoSynId)@filePath, sep="\t",
-                             header=T,na.strings=c("NA","NaN",""),check.names=FALSE,as.is=TRUE)
-           tmp <- tmp[tmp$sample_type != "normal",]
-           return (new("phenoObj", data=tmp,
-                       discreteFields=list(),
-                       continuousFields=list(),
-                       censoredFields=list()))
-         })(), 
+      
          gse8671=(function(){
            tmp <- read.table(synGet(allDatasets$gse8671$phenoSynId)@filePath, sep="\t",
                              header=T,na.strings=c("NA","NaN",""),check.names=FALSE,as.is=TRUE)
@@ -422,6 +407,7 @@ groupDHandler <- function(M){
   colnames(df) <- colnames(M)
   df
 }
+
 groupEHandler <- function(M){
   if("sample_names" %in% colnames(M)){
     rownames(M) <- M$sample_names
@@ -431,6 +417,12 @@ groupEHandler <- function(M){
 }
 
 
+getGroupResults <- function(groupId, filter=patientDatasets){
+  
+  # reimplement using functions below
+
+}
+  
 getGroupResultId <- function(group, ds){
   parentId <- groupFolders[[group]]
   tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', parentId, '"', sep=""))

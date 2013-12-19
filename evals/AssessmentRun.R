@@ -2,124 +2,86 @@ library(synapseClient)
 library(rGithubClient)
 library(survival)
 library(ggplot2)
+library(gplots)
 library(scales)
 crcRepo <- getRepo("Sage-Bionetworks/crcsc")
 sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
-synapseLogin("justin.guinney@sagebase.org")
 
+
+synapseLogin("justin.guinney@sagebase.org")
+source("evals/getDataFuncs.R")
+source("evals/tcgaEval.R")
+source("evals/evalFuncs.R")
 source("groups/G/scoring//AssessmentPipelineFunc.R")
 
 
-datasets <- c(coreDatasets,publicDatasets)
+###############
+# load all group results
 
-groupFolders <- list(GroupA="syn2274064",GroupB="syn2274065",
-                       GroupC="syn2274066",GroupD="syn2274067",
-                       GroupE="syn2274069",GroupF="syn2274068",
-                       GroupG="syn2274063")
-
-
-# load all pmatrices
-
-groupBHandler <- function(M){
-  tmp <- abs(M[, 1:6])
-  v <- apply(tmp, 1, sum)
-  1 - sweep(tmp,MARGIN=1,v,"/")
-}
-groupDHandler <- function(M){
-  foo <- M[,1]
-  pMatrix <- model.matrix(~0 + foo)
-  colnames(pMatrix) <- gsub("foo(.*)","\\1",colnames(pMatrix))
-  rownames(pMatrix) <- rownames(M)
-  pMatrix
-}
-groupEHandler <- function(M){
-  if("sample_names" %in% colnames(M)){
-    rownames(M) <- M$sample_names
-    M <- M[,-which(colnames(M) == "sample_names")]
-  }
-  M[,-which(colnames(M) == "CCS")]
-}
-
-groupResults <- lapply(names(groupFolders), function(groupId){
-  parentId <- groupFolders[[groupId]]
-  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="',parentId,'"',sep=""))
-  N <- nrow(tmp)
-  pmatrices <- lapply(tmp$entity.id, function(synId){
-    cat(groupId, synId, "\n")
-    file <- synGet(synId)@filePath
-    sep <- ifelse(grepl("\\.csv$",file),",","\t")
-    pMatrix <- read.table(file, sep=sep,header=T,as.is=T,row.names=1,check.names=FALSE)
-    
-    pMatrix <- switch(groupId,
-           GroupB = groupBHandler(pMatrix),
-           GroupD = groupDHandler(pMatrix),
-           GroupE = groupEHandler(pMatrix),
-           pMatrix)
-    #rownames(pMatrix) <- clean.names(rownames(pMatrix))
-    return (pMatrix)
-  })
-  
-  synIds <- sapply(tmp$entity.name, function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
-  names(pmatrices) <- sapply(synIds, getDatanameForExprSynId)
-  
-  return (pmatrices)
-})
+groupResults <- lapply(names(groupFolders), getGroupResults)  
 names(groupResults) <- names(groupFolders)
-groupResults <- groupResults[sapply(groupResults, length) > 0]
 
+####
+# plot subtype distribution
 
-
-#############
-## ASSESS phenotypes
-allPhenoObjs <- c(corePhenoObjs, publicPhenoObjs)
-
-tmplist <- list()
-for(group in names(groupResults)){
-  groupResult <- groupResults[[group]]
-  for(ds in names(groupResult)){
-    if(ds %in% names(allPhenoObjs)){
-      phenoObj <- allPhenoObjs[[ds]]
-      cat(ds, group,"\n")
-      tmp <- assessPhenotypes(phenoObj, groupResult[[ds]])
-      if(length(tmp) > 0){
-        tmp2 <- data.frame(group=rep(group, length(tmp)),
-                           ds=rep(ds,length(tmp)),
-                           feature=names(tmp),
-                           t(sapply(tmp,function(x){
-          quantile(x, c(.05, .5, .95))
-        })),check.names=FALSE)
-        tmplist[[length(tmplist) + 1]] <- tmp2
-      }
-    }
-  }
-}
-df <- do.call("rbind",tmplist)
-colnames(df) <- c("group","ds","feature","low","med","high")
-
-# plot by data set
-for(ds in unique(df$ds)){
-  data <- df[df$ds==ds,]
-  sp <- ggplot(data, aes(x=feature, y=med)) + 
-    geom_crossbar(aes(fill = factor(group),ymin=low,ymax=high),position="dodge") + 
-    scale_y_continuous(trans = log10_trans(),
-                       breaks = trans_breaks("log10", function(x) 10^x),
-                       labels = trans_format("log10", math_format(10^.x)))
-  sp <- sp + geom_hline(yintercept=.001, colour="red",linetype="dashed") + ylab("Significance")
-  sp <- sp + geom_vline(xintercept=1:(sum(table(data$feature) > 0)-1)+.5, colour="white")
-  sp <- sp + theme(panel.grid.minor.x=element_blank(), 
-                   panel.grid.major.x=element_blank(),
-                   axis.title.x = element_blank(),
-                   axis.text.x = element_text(angle = 90, hjust = 1))
-  pdf(paste("evalPlots/byDataset/",as.character(ds),".pdf",sep=""),width=8,height=5)
-  print(sp)
+for(groupName in names(groupResults)){
+  pdf(paste("./evalPlots/GroupSubtypeFreq_",groupName,".pdf",sep=""))
+  plotSubtypeDistribution(groupResults[[groupName]])
   dev.off()
 }
 
+####
+# plot dataset used by group
+pdf("./evalPlots/GroupDatasetUse.pdf")
+plotDatasetsUsedByGroup(groupResults)
+dev.off()
+
+######
+## TCGA assessment
+tcgaData <- getTCGAMutationStats()
+for(groupId in names(groupResults)){
+  pMatrix <- groupResults[[groupId]][["tcga_rnaseq"]]
+  R <- testCinAssoc(pMatrix, tcgaData$cin)
+  pdf(paste("./evalPlots/tcga/", groupId,"_cin.pdf",sep=""))
+  plotCinAssoc(R=R)
+  dev.off()
+  R <- testMutAssoc(pMatrix, tcgaData$mutPatTbl)
+  pdf(paste("./evalPlots/tcga/", groupId,"_mut.pdf",sep=""))
+  plotMutAssoc(R=R)
+  dev.off()
+}
+
+#############
+## acquire phenodata
+phenoObjs <- lapply(names(patientDatasets), getPhenoObjs)
+names(phenoObjs) <- names(patientDatasets)
+phenoObjs <- phenoObjs[!sapply(phenoObjs, is.na)]
+
+# plot data size distribution
+df <- data.frame(size=sapply(phenoObjs, function(x) nrow(x$data)))
+f <- factor(rownames(df), levels=rownames(df)[order(df$size)])
+df$dataset <- f
+
+sp <- ggplot(df,aes(x=dataset,y=size)) + 
+  geom_bar(stat="identity",position="dodge") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+pdf("./evalPlots/DatasetDist.pdf")
+print(sp)
+dev.off()
+
+#############################
+# assesss phenotype associations
+L <- lapply(groupResults, assessPhenotypesPerGroup, phenoObjs=phenoObjs,bySubtype=FALSE)
+R <- melt(L, measure.vars="value")
+cn <- colnames(R)
+cn[cn=="L1"] <- "group"
+colnames(R) <- cn
+
 # plot by feature
-for(feature in unique(df$feature)){
+for(feature in unique(R$phenotype)){
   
-  data <- df[df$feature==feature,]
-  sp <- ggplot(data, aes(x=group, y=med)) + 
+  data <- R[R$phenotype==feature,]
+  sp <- ggplot(data, aes(x=group, y=value)) + 
     geom_crossbar(aes(fill = factor(group),ymin=low,ymax=high),position="dodge") + 
     scale_y_continuous(trans = log10_trans(),
                        breaks = trans_breaks("log10", function(x) 10^x),
@@ -131,17 +93,17 @@ for(feature in unique(df$feature)){
                    panel.grid.major.x=element_blank(),
                    axis.title.x = element_blank(),
                    axis.text.x = element_blank())
-  sp <- sp + facet_wrap(~ds,ncol=4,scales="free")
+  sp <- sp + facet_wrap(~dataset,ncol=4,scales="free")
   sp <- sp + ylab("Significance") + xlab("") + aes(ymin=1)
   
   pdf(paste("evalPlots/byFeature/",as.character(feature),".pdf",sep=""),width=8,height=5)
   print(sp)
   
-  uds <- as.character(unique(data$ds))
-  if(feature %in% names(allPhenoObjs[[uds[1]]]$discreteFields)){
+  uds <- as.character(unique(data$dataset))
+  if(feature %in% names(phenoObjs[[uds[1]]]$discreteFields)){
     par(mfrow=c(ceiling(length(uds) / 4),4))
     for(ds in uds){
-      phenoObj <- allPhenoObjs[[ds]]
+      phenoObj <- phenoObjs[[ds]]
       field <- phenoObj$discreteFields[[feature]]
       tbl <- table(phenoObj$data[, field])
       textplot(cbind(tbl),cex=.9)
@@ -178,7 +140,7 @@ for(group in unique(df$group)){
 
 ############################
 ## comparison of overlap
-
+globalConcordanceComparison(groupResults)
 
 groupNames <- names(groupResults)
 groupSubtypeNames <- lapply(groupNames, function(x){ 
