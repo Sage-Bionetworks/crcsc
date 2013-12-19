@@ -407,6 +407,7 @@ groupDHandler <- function(M){
   colnames(df) <- colnames(M)
   df
 }
+
 groupEHandler <- function(M){
   if("sample_names" %in% colnames(M)){
     rownames(M) <- M$sample_names
@@ -417,30 +418,33 @@ groupEHandler <- function(M){
 
 
 getGroupResults <- function(groupId, filter=patientDatasets){
-  parentId <- groupFolders[[groupId]]
-  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="',parentId,'"',sep=""))
   
-  filterMask <- grepl(paste(sapply(filter, function(x) x$exprSynId),collapse="|"), tmp$entity.name)
+  # reimplement using functions below
+
+}
   
-  pmatrices <- lapply(tmp$entity.id[filterMask], function(synId){
-    cat(groupId, synId, "\n")
-    file <- synGet(synId)@filePath
-    sep <- ifelse(grepl("\\.csv$",file),",","\t")
-    pMatrix <- read.table(file, sep=sep,header=T,as.is=T,row.names=1,check.names=FALSE)
-    
-    pMatrix <- switch(groupId,
-                      GroupB = groupBHandler(pMatrix),
-                      GroupD = groupDHandler(pMatrix),
-                      GroupE = groupEHandler(pMatrix),
-                      pMatrix)
-    #rownames(pMatrix) <- clean.names(rownames(pMatrix))
-    return (pMatrix)
-  })
+getGroupResultId <- function(group, ds){
+  parentId <- groupFolders[[group]]
+  tmp <- synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', parentId, '"', sep=""))
   
-  synIds <- sapply(tmp$entity.name[filterMask], function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
-  names(pmatrices) <- sapply(synIds, getDatanameForExprSynId)
+  synIds <- lapply(as.list(tmp$entity.name), function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
+  these <- sapply(synIds, getDatanameForExprSynId)
   
-  return (pmatrices)
+  tmp$entity.id[ which(these == ds) ]
+}
+
+getGroupResult <- function(synId, groupId){
+  file <- getFileLocation(synGet(synId))
+  sep <- ifelse(grepl("\\.csv$", file), ",", "\t")
+  pMatrix <- read.table(file, sep=sep, header=T, as.is=T, row.names=1, check.names=FALSE)
+  
+  pMatrix <- switch(groupId,
+                    GroupB = groupBHandler(pMatrix),
+                    GroupD = groupDHandler(pMatrix),
+                    GroupE = groupEHandler(pMatrix),
+                    pMatrix)
+  #rownames(pMatrix) <- clean.names(rownames(pMatrix))
+  return(pMatrix)
 }
 
 
