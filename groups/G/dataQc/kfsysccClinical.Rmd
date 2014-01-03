@@ -10,7 +10,7 @@ require(ggplot2)
 
 ## GET THE LOCATION OF THIS FILE ON GITHUB
 crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
-rmdUrl <- getPermlink(crcscRepo, "dataQc/kfsysccClinical.Rmd")
+rmdUrl <- getPermlink(crcscRepo, "groups/G/dataQc/kfsysccClinical.Rmd")
 
 ## SYNAPSE FOLDER
 synFolder <- "syn2171230"
@@ -29,7 +29,7 @@ rownames(clin) <- paste(clin$SN, "CEL", sep=".")
 ## SUBSET TO COHORT OF INTEREST
 clin <- clin[thesePatients, ]
 clin$osStat <- ifelse(clin$Death == 0 | is.na(clin$Death), 0, 1)
-clin$osMo <- clin$FT
+clin$osMo <- clin$FT*12
 # clin$dfsStat <- ifelse(clin$Relap_M == 0 | is.na(clin$Relap_M), 0, 1)
 # clin$dfsMo <- clin$MET
 # clin$dfsStat[ clin$dfsStat==0 & clin$osStat==1 ] <- 1
