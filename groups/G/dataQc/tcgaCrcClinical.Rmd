@@ -15,7 +15,7 @@ require(ggplot2)
 
 ## GET THE LOCATION OF THIS FILE ON GITHUB
 crcscRepo <- getRepo("/Sage-Bionetworks/crcsc")
-rmdUrl <- getPermlink(crcscRepo, "dataQc/tcgaCrcClinical.Rmd")
+rmdUrl <- getPermlink(crcscRepo, "groups/G/dataQc/tcgaCrcClinical.Rmd")
 
 ## READ IN FILES AS FORMATED BY TCGA PAN CANCER GROUP - UTILIZING OLD 'DATA' OBJECTS INSTEAD OF FILES
 loadTCGAFile <- function(ent){
