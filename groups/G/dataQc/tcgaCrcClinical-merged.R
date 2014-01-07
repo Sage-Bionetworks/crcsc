@@ -103,7 +103,7 @@ clinOut$osMo[which(clin$vital_status=="DECEASED")] <- as.numeric(clin$days_to_de
 
 
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
-act <- Activity(name="Clinical curation knitr script", used=list(crcRNAseqSyn, readClinSyn, coadClinSyn, coadFUSyn, readFUSyn, list(url=rmdUrl, name=basename(rmdUrl), wasExecuted=TRUE)))
+act <- Activity(name="Clinical curation knitr script", used=list(crcRNAseqSyn, readClinSyn, coadClinSyn, coadFUSyn, readFUSyn, list(url=rUrl, name=basename(rUrl), wasExecuted=TRUE)))
 act <- synStore(act)
 
 ## CLINICAL FILE
