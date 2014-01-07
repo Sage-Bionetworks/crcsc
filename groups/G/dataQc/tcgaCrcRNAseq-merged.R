@@ -160,9 +160,9 @@ act <- synStore(act)
 exprAdj <- as.data.frame(exprAdj)
 tmpNames <- colnames(exprAdj)
 exprAdj$feature <- rownames(exprAdj)
-exprAdj <- expr[, c("feature", tmpNames)]
+exprAdj <- exprAdj[, c("feature", tmpNames)]
 tcgaCrcExprFile <- file.path(tempdir(), "TCGACRC_expression-merged.tsv")
-write.table(expr, file=tcgaCrcExprFile, sep="\t", quote=FALSE, row.names=FALSE)
+write.table(exprAdj, file=tcgaCrcExprFile, sep="\t", quote=FALSE, row.names=FALSE)
 
 exprFile <- File(path=tcgaCrcExprFile, parentId=synFolder)
 generatedBy(exprFile) <- act
