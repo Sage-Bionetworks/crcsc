@@ -96,9 +96,17 @@ exprList <- list(agendia_gse42284 = list(synId = "syn2192792",
                  sanger = list(synId = "syn2181097",
                      entrezMapper = u133a2Map),
                  ccle = list(synId = "syn2292137",
-                     entrezMapper = entrezmtMap))
+                     entrezMapper = entrezmtMap),
+                 tcgacrc_ga = list(synId = "syn2326094",
+                     entrezMapper = symbolMap),
+                 tcgacrc_hiseq = list(synId = "syn2326100",
+                     entrezMapper = symbolMap),
+                 tcgacrc_merged = list(synId = "syn2325328",
+                     entrezMapper = symbolMap),
+                 tcgacrc_microarray = list(synId = "syn2316354",
+                     entrezMapper = tcga_agilentMap))
 
-for (n in names(exprList)[24:28]) {
+for (n in names(exprList)[29:32]) {
     x = exprList[[n]]
     message(paste("Now processing ", n, "..."))
 

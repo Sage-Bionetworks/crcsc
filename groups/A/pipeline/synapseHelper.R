@@ -64,6 +64,19 @@ discoverprint_32627Map <- function(ids) {
            function(x) paste(x, collapse = "//")))
 }
 
+## TCGA microarray probeset IDs to Entrez Gene IDs
+tcga_agilentMap <- function(ids) {
+    file <- getFileLocation(synGet("syn2316355"))
+    tbl <- read.delim(file, sep = "\t", as.is = TRUE,
+                      header = TRUE)
+    idxs <- match(ids, tbl$CLID)
+    stopifnot(!any(is.na(idxs)))
+    genesymbols <- tbl$Gene.Symbol[idxs]
+    return(sapply(AnnotationDbi::mget(as.character(genesymbols), org.Hs.egSYMBOL2EG,
+                                      ifnotfound = NA),
+                  function(x) paste(x, collapse = "//")))
+}
+
 ## #####################################################
 ## Function to load data
 ## #####################################################
