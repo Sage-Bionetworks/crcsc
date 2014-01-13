@@ -72,9 +72,15 @@ tcga_agilentMap <- function(ids) {
     idxs <- match(ids, tbl$CLID)
     stopifnot(!any(is.na(idxs)))
     genesymbols <- tbl$Gene.Symbol[idxs]
-    return(sapply(AnnotationDbi::mget(as.character(genesymbols), org.Hs.egSYMBOL2EG,
-                                      ifnotfound = NA),
-                  function(x) paste(x, collapse = "//")))
+    entrezID <- rep(NA, length(genesymbols))
+    temp <- which(genesymbols != "")
+    gstemp <- genesymbols[temp]
+    temp2 <- sapply(AnnotationDbi::mget(as.character(gstemp), org.Hs.egSYMBOL2EG,
+                                        ifnotfound = NA),
+                    function(x) paste(x, collapse = "//"))
+    entrezID[temp] <- temp2
+    entrezID[entrezID == "NA"] <- NA
+    return(entrezID)
 }
 
 ## #####################################################
@@ -99,18 +105,18 @@ loadMatrix <- function(synId, file = "", sep = "\t", quote = "", ...) {
                       comment.char = "",
                       check.names = FALSE)
 
-    ## Remove duplicates
-    dupls <- which(duplicated(raw[, 1]))
-    if (length(dupls) > 0) {
-        raw <- raw[-dupls, ]
-    }
-
     ## Create the matrix
     if (is.character(raw[, 1])) {
         M <- as.matrix(raw[, -1])
         rownames(M) <- raw[, 1]
     } else {
         M <- as.matrix(raw)
+    }
+
+    ## Remove duplicates
+    dupls <- which(duplicated(rownames(M)))
+    if (length(dupls) > 0) {
+        M <- M[-dupls, ]
     }
 
     return(M)

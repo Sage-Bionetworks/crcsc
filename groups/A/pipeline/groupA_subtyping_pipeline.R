@@ -104,9 +104,10 @@ exprList <- list(agendia_gse42284 = list(synId = "syn2192792",
                  tcgacrc_merged = list(synId = "syn2325328",
                      entrezMapper = symbolMap),
                  tcgacrc_microarray = list(synId = "syn2316354",
+                     quote = '""', 
                      entrezMapper = tcga_agilentMap))
 
-for (n in names(exprList)[29:32]) {
+for (n in names(exprList)[32]) {
     x = exprList[[n]]
     message(paste("Now processing ", n, "..."))
 
