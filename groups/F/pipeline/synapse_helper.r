@@ -33,9 +33,11 @@ loadMatrix = function(synId, file="", sep="\t", quote=""){
 					 check.names=FALSE)
 	
 	# Remove duplicates
-	dupls = which(duplicated(raw[, 1]))
-	if (length(dupls) > 0) {
-		raw = raw[-dupls, ]
+	if (!is.numeric(raw[, 1])) {
+		dupls = which(duplicated(raw[, 1]))
+		if (length(dupls) > 0) {
+			raw = raw[-dupls, ]
+		}
 	}
 	
 	# Create the matrix
