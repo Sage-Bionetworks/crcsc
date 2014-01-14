@@ -17,7 +17,7 @@ helperFunctions = getPermlink(crcRepo, "groups/F/pipeline/synapse_helper.r")
 # Putting everything together
 thisScript = getPermlink(crcRepo, "groups/F/pipeline/subtyping.r")
 
-synapseLogin("a.schlicker@nki.nl")
+synapseLogin()
 
 # File with iNMF signatures (Affy probe sets, Entrez gene IDs and gene symbols) stored in Synapse
 iNMFSignaturesSynId = "syn2245383"
@@ -43,7 +43,11 @@ coreExprList = list(
 		nki_az=list(synId="syn2176657", is.logr=FALSE),
 		petacc3=list(synId="syn2175581", sigId="entrez", mapSynId="syn2199825", mapId="Entrez.GeneID", is.logr=FALSE),
 		tcga_rnaseq=list(synId="syn2161141", sigId="symbol", is.logr=FALSE),
-		mdanderson=list(synId="syn2233387", sigId="symbol", mapSynId="syn2233216", mapId="GeneName", is.logr=TRUE))
+		mdanderson=list(synId="syn2233387", sigId="symbol", mapSynId="syn2233216", mapId="GeneName", is.logr=TRUE),
+		tcga_rnaseq_ga=list(synId="syn2326094", sigId="symbol", is.logr=FALSE),
+		tcga_rnaseq_hi=list(synId="syn2326100", sigId="symbol", is.logr=FALSE),
+		tcga_rnaseq_merged=list(synId="syn2325328", sigId="symbol", is.logr=FALSE),
+		tcga_microarray=list(synId="syn2316354", quote="\"", sigId="symbol", mapSynId="syn2316355", mapId="Gene.Symbol", is.logr=TRUE))
 
 publicExprList = list(
 		gse10961=list(synId="syn2177194", is.logr=FALSE, annSynId="syn2177195"),
@@ -97,7 +101,7 @@ for (n in names(allData)) {
 	mapping = NULL
 	if (!is.null(x$mapSynId)) {
 		# Get the mapping from data set IDs to signature IDs
-		map.mat = loadMatrix(x$mapSynId)
+		map.mat = loadMatrix(x$mapSynId, quote=quote)
 		mapping = getMapping(map.mat, x$mapId)
 	}
 	# Get the iNMF signatures
