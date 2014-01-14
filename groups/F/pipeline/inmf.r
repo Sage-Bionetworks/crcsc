@@ -240,15 +240,20 @@ iNMF = function(exprs, signatures, bootstrap=FALSE, silhouette=TRUE, plotHeatmap
 ##' @author Andreas Schlicker
 subtypingMatrix = function(solution, samples=NULL) {
 	if (class(solution) != "list") {
-		print(solution)
-		print(class(solution))
 		return(matrix(0, ncol=5, nrow=length(samples)))
 	}
+	
 	combined = c(solution$step2.c1$clustering,
 				 solution$step2.c2$clustering)
+	
+	if (any(is.na(names(combined)))) {
+		return(matrix(0, ncol=5, nrow=length(samples)))
+	}
+	
 	if (is.null(samples)) {
 		samples = unlist(combined)
 	}
+	
 	mat = matrix(0, ncol=5, nrow=length(samples))
 	colnames(mat) = c("1.1", "1.2", "1.3", "2.1", "2.2")
 	rownames(mat) = samples
@@ -261,6 +266,14 @@ subtypingMatrix = function(solution, samples=NULL) {
 	mat
 }
 
+##' Generates a square matrix of co-clustering samples.
+##' @param solution subtyping solution as returned by iNMF
+##' @param samples vector with all samples contained in the data set.
+##' If set to NULL (default), the function assumes that the step1
+##' subtyping contains all samples. This parameter allows to account for
+##' samples missing in the solution, e.g. when performing bootstrapping. 
+##' @return a square matrix indicating which samples co-clustered
+##' @author Andreas Schlicker
 coClustering = function(solution, samples=NULL) {
 	if (class(solution) != "list") {
 		print(solution)
@@ -339,8 +352,13 @@ bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL
 	res = subtypingMatrix(subs[[1]], colnames(exprs))
 	coclust = coClustering(subs[[1]], colnames(exprs))
 	for (i in 2:runs) {
-		res = res + subtypingMatrix(subs[[i]], colnames(exprs))
-		coclust = coclust + coClustering(subs[[i]], colnames(exprs))
+		subMat = subtypingMatrix(subs[[i]], colnames(exprs))
+		# If the sum is 0, something is wrong with the solution.
+		# Ignore it
+		if (sum(subMat) > 0) {
+			res = res + subMat
+			coclust = coclust + coClustering(subs[[i]], colnames(exprs))
+		}
 	}
 	
 	list(subtype.p=res / apply(res, 1, sum), cocluster=coclust / diag(coclust))
