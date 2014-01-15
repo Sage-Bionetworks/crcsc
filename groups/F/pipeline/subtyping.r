@@ -47,7 +47,7 @@ coreExprList = list(
 		tcga_rnaseq_ga=list(synId="syn2326094", sigId="symbol", is.logr=FALSE),
 		tcga_rnaseq_hi=list(synId="syn2326100", sigId="symbol", is.logr=FALSE),
 		tcga_rnaseq_merged=list(synId="syn2325328", sigId="symbol", is.logr=FALSE),
-		tcga_microarray=list(synId="syn2316354", quote="\"", sigId="symbol", mapSynId="syn2316355", mapId="Gene.Symbol", is.logr=TRUE))
+		tcga_microarray=list(synId="syn2316354", quote="\"", sigId="symbol", mapSynId="syn2316355", mapId="Gene.Symbol", is.logr=FALSE))
 
 publicExprList = list(
 		gse10961=list(synId="syn2177194", is.logr=FALSE, annSynId="syn2177195"),
