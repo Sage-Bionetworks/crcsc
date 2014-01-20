@@ -19,9 +19,8 @@ phenoObj <- setRefClass("phenoObj", fields=list(data="data.frame",
                                                 continuousFields="list",
                                                 censoredFields="list"))
 
-## TCGA UPDATED TO USE MERGED DATA (GA AND HISEQ)
 coreDatasets <- list(amc_ajccii=dataset(exprSynId="syn2159423",phenoSynId="syn2159427"),
-                     tcga_rnaseq=dataset(exprSynId="syn2325328",phenoSynId="syn2325330"),
+                     tcga_rnaseq=dataset(exprSynId="syn2161141",phenoSynId="syn2165691"),
                      kfsyscc=dataset(exprSynId="syn2169565",phenoSynId="syn2171240"),
                      french=dataset(exprSynId="syn2171434",phenoSynId="syn2171548"),
                      petacc=dataset(exprSynId="syn2175581",phenoSynId="syn2280515"),
@@ -212,8 +211,7 @@ getPhenoObjs <- function(ds){
            new("phenoObj", data=tmp,
                discreteFields=list(gender="gender",
                                    stage="stage",
-                                   location="tumorLocation",
-                                   msi="microsatelite"),
+                                   location="tumorLocation"),
                continuousFields=list(age="age"),
                censoredFields=list(os=c("osMo","osStat")))
          })(),
