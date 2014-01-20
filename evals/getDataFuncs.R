@@ -7,6 +7,7 @@ if( !exists("crcRepo") ){
 }
 sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
 sourceRepoFile(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
+sourceRepoFile(crcRepo, "evals/evalFuncs.R")
 
 
 #####
@@ -444,7 +445,7 @@ getGroupResult <- function(synId, groupId){
                     GroupD = groupDHandler(pMatrix),
                     GroupE = groupEHandler(pMatrix),
                     pMatrix)
-  #rownames(pMatrix) <- clean.names(rownames(pMatrix))
+  rownames(pMatrix) <- clean.names(rownames(pMatrix))
   return(pMatrix)
 }
 
