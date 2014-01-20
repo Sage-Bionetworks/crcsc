@@ -40,10 +40,13 @@ sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
 code1 <- getPermlink(crcRepo, "groups/G/pipeline/JGLibrary.R")
 sourceRepoFile(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
 code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
+sourceRepoFile(crcRepo, "evals/evalFuncs.R")
+code3 <- getPermlink(crcRepo, "evals/evalFuncs.R")
+
 
 ## SOURCE CODE TO READ IN DATA
 sourceRepoFile(crcRepo, "evals/getDataFuncs.R")
-code3 <- getPermlink(crcRepo, "evals/getDataFuncs.R")
+code4 <- getPermlink(crcRepo, "evals/getDataFuncs.R")
 
 ## THIS SCRIPT
 thisCode <- getPermlink(crcRepo, "evals/evalGenesets.R")
@@ -82,7 +85,7 @@ colnames(st) <- colnames(pmat)
 ## GET THE EXPRESSION DATA FOR THIS DATASET
 ## SUBSET TO AND ORDER LIKE THE SAMPLES IN THE SUBTYPE MATRIX
 d <- getExprSet(ds)
-d <- d[, rownames(st) ]
+d <- d[, as.character(rownames(st)) ]
 d <- d[apply(exprs(d), 1, sd) != 0, ]
 
 ## GET THE GENESETS
@@ -124,6 +127,7 @@ pvalSyn <- synStore(File(path=pvalFile, parentId="syn2322802", group=group, data
                                         list(name=basename(code1), url=code1, wasExecuted=F),
                                         list(name=basename(code2), url=code2, wasExecuted=F),
                                         list(name=basename(code3), url=code3, wasExecuted=F),
+                                        list(name=basename(code4), url=code4, wasExecuted=F),
                                         list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                         list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                         list(name=basename(thisCode), url=thisCode, wasExecuted=T)
@@ -137,6 +141,7 @@ fcSyn <- synStore(File(path=fcFile, parentId="syn2322802", group=group, dataset=
                                       list(name=basename(code1), url=code1, wasExecuted=F),
                                       list(name=basename(code2), url=code2, wasExecuted=F),
                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(name=basename(code4), url=code4, wasExecuted=F),
                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
@@ -168,6 +173,7 @@ gtSyn <- synStore(File(path=gtFile, parentId="syn2322802", group=group, dataset=
                                       list(name=basename(code1), url=code1, wasExecuted=F),
                                       list(name=basename(code2), url=code2, wasExecuted=F),
                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(name=basename(code4), url=code4, wasExecuted=F),
                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
@@ -204,6 +210,7 @@ gsaSyn <- synStore(File(path=gsaFile, parentId="syn2322802", group=group, datase
                                        list(name=basename(code1), url=code1, wasExecuted=F),
                                        list(name=basename(code2), url=code2, wasExecuted=F),
                                        list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(name=basename(code4), url=code4, wasExecuted=F),
                                        list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                        list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
                                        list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
@@ -231,6 +238,7 @@ ksSyn <- synStore(File(path=ksFile, parentId="syn2322802", group=group, dataset=
                                       list(name=basename(code1), url=code1, wasExecuted=F),
                                       list(name=basename(code2), url=code2, wasExecuted=F),
                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                      list(name=basename(code4), url=code4, wasExecuted=F),
                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
@@ -291,6 +299,7 @@ tukSyn <- synStore(File(path=tukFile, parentId="syn2322802", group=group, datase
                                        list(name=basename(code1), url=code1, wasExecuted=F),
                                        list(name=basename(code2), url=code2, wasExecuted=F),
                                        list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(name=basename(code4), url=code4, wasExecuted=F),
                                        list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
                                        list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
                                        list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
