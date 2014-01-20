@@ -192,6 +192,8 @@ subtype = function(exprs, signatures, samples=NULL, silhouette=TRUE) {
 ##' obtain this list.
 ##' @param bootstrap boolean indicating whether running in bootstrap mode. If TRUE,
 ##' samples will be randomly selected
+##' @param randomizeFeatures boolean indicating if features should be randomized before
+##' running the subtyping; default: FALSE
 ##' @param silhouette boolean indicating whether the silhouette should be calculated
 ##' @param plotHeatmaps boolean indicating whether clustering heatmaps should be 
 ##' saved in files
@@ -199,11 +201,15 @@ subtype = function(exprs, signatures, samples=NULL, silhouette=TRUE) {
 ##' @param filePrefix file name prefix for the heatmap files
 ##' @return a named list with the clustering results
 ##' @author Andreas Schlicker
-iNMF = function(exprs, signatures, bootstrap=FALSE, silhouette=TRUE, plotHeatmaps=TRUE, directory=".", filePrefix="") {
+iNMF = function(exprs, signatures, bootstrap=FALSE, randomizeFeatures=FALSE, silhouette=TRUE, plotHeatmaps=TRUE, directory=".", filePrefix="") {
 	if (bootstrap) {
 		samples = sample(colnames(exprs), ncol(exprs), TRUE)
 	} else {
 		samples = colnames(exprs)
+	}
+	
+	if (randomizeFeatures) {
+		rownames(exprs) = sample(rownames(exprs))
 	}
 	
 	clust1 = subtype(exprs, signatures$step1, samples, silhouette)
@@ -314,11 +320,13 @@ coClustering = function(solution, samples=NULL) {
 ##' @param seed random seed; default: NULL. If computation is performed in parallel, this
 ##' seed is not set for each thread. Otherwise all would produce the same random number sequence
 ##' and thus use the same sample selection.
+##' @param samples boolean, bootstrap samples; default: TRUE
+##' @param features boolean, randomize features; default: FALSE
 ##' @return a probability matrix with subtypes in columns and samples in rows. Each value
 ##' is computed as number of times the sample was assigned to a given subtype divided by
 ##' the total number of subtype assignments over all runs. 
 ##' @author Andreas Schlicker
-bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL) {
+bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL, samples=TRUE, features=FALSE) {
 	if (!is.null(seed)) {
 		set.seed(seed)
 	}
@@ -334,7 +342,8 @@ bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL
 				iNMF, 
 				exprs=exprs, 
 				signatures=signatures, 
-				bootstrap=TRUE, 
+				bootstrap=samples,
+				randomizeGenes=features,
 				silhouette=FALSE, 
 				plotHeatmaps=FALSE,
 				mc.cores=procCores)	
@@ -343,7 +352,8 @@ bootstrappediNMF = function(exprs, signatures, runs=1000, procCores=1, seed=NULL
 				iNMF, 
 				exprs=exprs, 
 				signatures=signatures, 
-				bootstrap=TRUE, 
+				bootstrap=samples,
+				randomizeGenes=features,
 				silhouette=FALSE, 
 				plotHeatmaps=FALSE)
 	}
