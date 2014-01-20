@@ -180,7 +180,7 @@ gtSyn <- synStore(File(path=gtFile, parentId="syn2322802", group=group, dataset=
 gsaResults <- lapply(as.list(1:nSubtypes), function(i){
   ## GSA REQUIRES 1 AND 2 INSTEAD OF 0 AND 1
   resp <- st[, i] + 1
-  op <- GSA(x=exprs(d), y=resp, genesets=genesets, genenames=featureNames(d), resp.type="Two class unpaired", nperms=1000, minsize=3)
+  op <- GSA(x=exprs(d), y=resp, genesets=genesets, genenames=featureNames(d), resp.type="Two class unpaired", nperms=10000, minsize=3)
   op
 })
 
@@ -263,7 +263,7 @@ tukResults <- sapply(as.list(1:nSubtypes), function(i){
     mgd <- sum(mgd<0.05)
     
     perms <- numeric()
-    for(j in 1:1000){
+    for(j in 1:10000){
       ran <- rnorm(length(resp))
       resp2 <- resp[order(ran)]
       fit2 <- lmFit(theseGenes, design=model.matrix(~ factor(resp2)))
