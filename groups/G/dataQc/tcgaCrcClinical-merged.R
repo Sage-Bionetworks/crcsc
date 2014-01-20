@@ -13,7 +13,7 @@ rUrl <- getPermlink(crcscRepo, "groups/G/dataQc/tcgaCrcClinical-merged.R")
 
 ## READ IN FILES AS FORMATED BY TCGA PAN CANCER GROUP - UTILIZING OLD 'DATA' OBJECTS INSTEAD OF FILES
 loadTCGAFile <- function(f){
-  df <- read.delim(getFileLocation(f), header=TRUE, as.is=TRUE, row.names=1, comment="", quote="", check.names=FALSE, na.strings=c("", "NA", " "))
+  df <- read.delim(getFileLocation(f), header=TRUE, as.is=TRUE, row.names=1, comment="", quote="", check.names=FALSE, na.strings=c("", "NA", " ", "[Not Available]", "[Not Applicable]", "[Unknown]", "<NA>"))
   return(df)
 }
 extractTcgaPatientIds <- function(tcgaIds){
@@ -34,11 +34,11 @@ crcRNAseqHead <- read.delim(crcRNAseqSyn@filePath, header=F, as.is=TRUE, nrows=1
 thesePatients <- as.character(crcRNAseqHead[1, -1])
 
 ## GRAB THE CLINICAL DATA
-coadClinSyn <- synGet("syn2320344")
+coadClinSyn <- synGet("syn2337874")
 coadClin <- loadTCGAFile(coadClinSyn)
 coadClin$rns <- rownames(coadClin)
 
-readClinSyn <- synGet("syn2320326")
+readClinSyn <- synGet("syn2337875")
 readClin <- loadTCGAFile(readClinSyn)
 readClin$rns <- rownames(readClin)
 
@@ -80,30 +80,46 @@ for( i in unique(extractTcgaPatientIds(rownames(crcFU))) ){
   }
 }
 
+
+## GRAB THE AUXILARY DATA
+coadAuxSyn <- synGet("syn2336029")
+coadAux <- read.delim(getFileLocation(coadAuxSyn), header=T, as.is=T, row.names=1, comment="", quote="", na.strings=c("", "NA", " ", "[Not Available]", "[Not Applicable]", "[Unknown]", "<NA>"))
+coadAux$rns <- rownames(coadAux)
+readAuxSyn <- synGet("syn2336062")
+readAux <- read.delim(getFileLocation(readAuxSyn), header=T, as.is=T, row.names=1, comment="", quote="", na.strings=c("", "NA", " ", "[Not Available]", "[Not Applicable]", "[Unknown]", "<NA>"))
+readAux$rns <- rownames(readAux)
+
+crcAux <- merge(x=coadAux, y=readAux, all=T)
+rownames(crcAux) <- crcAux$rns
+crcAux$rns <- NULL
+
+clin$msi <- NA
+clin$msi <- crcAux[rownames(clin), "mononucleotide_and_dinucleotide_marker_panel_analysis_status"]
+
 ## SUBSET TO COHORT OF INTEREST
 clin <- clin[thesePatients, ]
 
-clinOut <- data.frame(id=clin$bcr_patient_barcode,
+clinOut <- data.frame(id=rownames(clin),
                       age=as.numeric(clin$age_at_initial_pathologic_diagnosis),
                       gender=tolower(clin$gender),
-#                       stage=clin$tumor_stage,
-#                       tStage=clin$primary_tumor_pathologic_spread,
-#                       nStage=clin$lymphnode_pathologic_spread,
-#                       mStage=clin$distant_metastasis_pathologic_spread,
+                      stage=clin$pathologic_stage,
+                      tStage=clin$pathologic_T,
+                      nStage=clin$pathologic_N,
+                      mStage=clin$pathologic_M,
                       tumorLocation=clin$anatomic_neoplasm_subdivision,
                       dfsMo=NA,
                       dfsStat=NA,
                       osMo=as.numeric(clin$days_to_last_followup)*12/365,
                       osStat=ifelse(clin$vital_status=="DECEASED", 1, 0),
                       batch=NA,
-#                       microsatelite=clin$microsatellite_instability,
+                      microsatelite=clin$msi,
                       cimp=NA,
                       adjChemo=NA)
 clinOut$osMo[which(clin$vital_status=="DECEASED")] <- as.numeric(clin$days_to_death[which(clin$vital_status=="DECEASED")])*12/365
 
 
 ## WRITE OUT AN ACTIVITY THAT CAPTURES WHAT WAS USED IN OUR ANALYSIS
-act <- Activity(name="Clinical curation knitr script", used=list(crcRNAseqSyn, readClinSyn, coadClinSyn, coadFUSyn, readFUSyn, list(url=rUrl, name=basename(rUrl), wasExecuted=TRUE)))
+act <- Activity(name="Clinical curation knitr script", used=list(crcRNAseqSyn, readClinSyn, coadClinSyn, coadFUSyn, readFUSyn, coadAuxSyn, readAuxSyn, list(url=rUrl, name=basename(rUrl), wasExecuted=TRUE)))
 act <- synStore(act)
 
 ## CLINICAL FILE
