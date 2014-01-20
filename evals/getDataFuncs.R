@@ -429,8 +429,9 @@ getGroupResultId <- function(group, ds){
   
   synIds <- lapply(as.list(tmp$entity.name), function(x){ gsub(".*?_(syn.*?)_.*","\\1",x)})
   these <- sapply(synIds, getDatanameForExprSynId)
+  notThese <- sapply(as.list(tmp$entity.name), function(x){ grepl("conf", x) })
   
-  tmp$entity.id[ which(these == ds) ]
+  tmp$entity.id[ which(these == ds & !notThese) ]
 }
 
 getGroupResult <- function(synId, groupId){
