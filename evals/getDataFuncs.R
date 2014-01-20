@@ -65,7 +65,7 @@ getDatanameForExprSynId <- function(synId){
 
 groupFolders <- list(GroupA="syn2274064",
                      GroupB="syn2274065",
-#                      GroupC="syn2274066",
+                     GroupC="syn2274066",
                      GroupD="syn2319015",
                      GroupE="syn2274069",
                      GroupF="syn2274068",
