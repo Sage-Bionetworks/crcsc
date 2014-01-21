@@ -22,7 +22,7 @@ synResultDir = "syn2274068"
 groupName = "GroupF"
 
 # Get result files
-allData = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId==', synResultDir, sep=""))
+allData = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', synResultDir, '"', sep=""))
 # Remove possible confidence files
 allData = allData[!str_detect(allData[, "entity.name"], "_conf"), ]
 
