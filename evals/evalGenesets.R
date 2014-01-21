@@ -73,13 +73,7 @@ st <- apply(pmat, 1, function(x){
   }
 })
 st <- t(st)
-if( ds == "tcga_rnaseq" ){
-  rownames(st) <- gsub(".", "-", rownames(st), fixed=T)
-}
-## FOR GEO DATASETS
-if( ds %in% names(publicDatasets) ){
-  rownames(st) <- gsub(".CEL", "", rownames(st), fixed=T)
-}
+rownames(st) <- clean.names(rownames(st))
 colnames(st) <- colnames(pmat)
 
 ## GET THE EXPRESSION DATA FOR THIS DATASET

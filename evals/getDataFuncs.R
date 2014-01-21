@@ -350,32 +350,34 @@ getPhenoObjs <- function(ds){
 getExprSet <- function(ds){
   exprSynId <- allDatasets[[ds]]$exprSynId
   phenoSynId <- allDatasets[[ds]]$phenoSynId
-  switch(ds,
-         agendia_gse42284=toEntrez(exprSynId, NULL, discoverprint_19742_Map, loader=agendia_data_loader, filename="GSE42284_normalized_data_matrix.txt"),
-         agendia_ico208=toEntrez(exprSynId, NULL, discoverprint_19742_Map, loader=agendia_data_loader, filename="ICO208_normalized_data.txt"),
-         agendia_vhb70=toEntrez(exprSynId, NULL, discoverprint_32627_Map, loader=agendia_data_loader, filename="VHB70_normalized_data.txt"),
-         mdanderson=toEntrez(exprSynId, NULL, discoverprint_32627_Map, loader=agendia_data_loader, filename=NULL),
-         kfsyscc=toEntrez(exprSynId, NULL, u133plus2Map),
-         french=toEntrez(exprSynId, NULL, u133plus2Map),
-         amc_ajccii=toEntrez(exprSynId, NULL, u133plus2Map,sep=","),
-         nki_az=toEntrez(exprSynId, NULL, u133plus2Map),
-         petacc3=toEntrez(exprSynId, NULL, petaccMap),
-         tcga_rnaseq=toEntrez(exprSynId, NULL, symbolMap),
-         
-         gse10961=toEntrez(exprSynId, phenoSynId),
-         gse13067=toEntrez(exprSynId, phenoSynId),
-         gse13294=toEntrez(exprSynId, phenoSynId),
-         gse14333=toEntrez(exprSynId, phenoSynId),
-         gse15960=toEntrez(exprSynId, phenoSynId),
-         gse17537=toEntrez(exprSynId, phenoSynId),
-         gse20916=toEntrez(exprSynId, phenoSynId),
-         gse2109=toEntrez(exprSynId, phenoSynId),
-         gse23878=toEntrez(exprSynId, phenoSynId),
-         gse37892=toEntrez(exprSynId, phenoSynId),
-         gse4107=toEntrez(exprSynId, phenoSynId),
-         gse4183=toEntrez(exprSynId, phenoSynId),
-         gse8671=toEntrez(exprSynId, phenoSynId),
-         NA)
+  es <- switch(ds,
+               agendia_gse42284=toEntrez(exprSynId, NULL, discoverprint_19742_Map, loader=agendia_data_loader, filename="GSE42284_normalized_data_matrix.txt"),
+               agendia_ico208=toEntrez(exprSynId, NULL, discoverprint_19742_Map, loader=agendia_data_loader, filename="ICO208_normalized_data.txt"),
+               agendia_vhb70=toEntrez(exprSynId, NULL, discoverprint_32627_Map, loader=agendia_data_loader, filename="VHB70_normalized_data.txt"),
+               mdanderson=toEntrez(exprSynId, NULL, discoverprint_32627_Map, loader=agendia_data_loader, filename=NULL),
+               kfsyscc=toEntrez(exprSynId, NULL, u133plus2Map),
+               french=toEntrez(exprSynId, NULL, u133plus2Map),
+               amc_ajccii=toEntrez(exprSynId, NULL, u133plus2Map,sep=","),
+               nki_az=toEntrez(exprSynId, NULL, u133plus2Map),
+               petacc3=toEntrez(exprSynId, NULL, petaccMap),
+               tcga_rnaseq=toEntrez(exprSynId, NULL, symbolMap),
+               
+               gse10961=toEntrez(exprSynId, phenoSynId),
+               gse13067=toEntrez(exprSynId, phenoSynId),
+               gse13294=toEntrez(exprSynId, phenoSynId),
+               gse14333=toEntrez(exprSynId, phenoSynId),
+               gse15960=toEntrez(exprSynId, phenoSynId),
+               gse17537=toEntrez(exprSynId, phenoSynId),
+               gse20916=toEntrez(exprSynId, phenoSynId),
+               gse2109=toEntrez(exprSynId, phenoSynId),
+               gse23878=toEntrez(exprSynId, phenoSynId),
+               gse37892=toEntrez(exprSynId, phenoSynId),
+               gse4107=toEntrez(exprSynId, phenoSynId),
+               gse4183=toEntrez(exprSynId, phenoSynId),
+               gse8671=toEntrez(exprSynId, phenoSynId),
+               NA)
+  sampleNames(es) <- clean.names(sampleNames(es))
+  es
 }
 
 
