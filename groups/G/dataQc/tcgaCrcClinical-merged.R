@@ -28,11 +28,6 @@ extractTcgaPatientIds <- function(tcgaIds){
 ## SYNAPSE FOLDER FOR THE TCGA DATA
 synFolder <- "syn2023932"
 
-crcRNAseqSyn <- synGet("syn2325328")
-crcRNAseqHead <- read.delim(crcRNAseqSyn@filePath, header=F, as.is=TRUE, nrows=1)
-
-thesePatients <- as.character(crcRNAseqHead[1, -1])
-
 ## GRAB THE CLINICAL DATA
 coadClinSyn <- synGet("syn2337874")
 coadClin <- loadTCGAFile(coadClinSyn)
@@ -95,9 +90,6 @@ crcAux$rns <- NULL
 
 clin$msi <- NA
 clin$msi <- crcAux[rownames(clin), "mononucleotide_and_dinucleotide_marker_panel_analysis_status"]
-
-## SUBSET TO COHORT OF INTEREST
-clin <- clin[thesePatients, ]
 
 clinOut <- data.frame(id=rownames(clin),
                       age=as.numeric(clin$age_at_initial_pathologic_diagnosis),
