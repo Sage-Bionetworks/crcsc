@@ -11,8 +11,6 @@ library(affy)
 
 # GitHib repository
 crcRepo = getRepo("andreas-schlicker/crcsc")
-# iNMF subtyping functions
-sourceRepoFile(crcRepo, "groups/F/pipeline/inmf.r")
 thisScript = getPermlink(crcRepo, "groups/F/normalization/frma_publicdata.r")
 
 synapseLogin()
@@ -25,17 +23,20 @@ allData = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', pu
 # Remove possible confidence files
 allData = allData[str_detect(allData[, "entity.name"], "GSE"), ]
 
-for (i in 1:nrow(allData)) { 
+for (i in 1:nrow(allData)) {
+	# Get the files 
 	files = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', allData[i, 2], '"', sep=""))
 	rawFile = which(str_detect(files[, 1], "RAW"))
 	geoId = unlist(str_split(allData[i, 1], "_"))[1]
 	celDir = file.path(geoId, "CEL")
 	
+	# Extract all CEL files and normalize
 	dir.create(celDir)
-	system(paste("tar xf ", geoId, "/", files[rawFile, 1], "-C", celDir, sep=""))
+	system(paste("tar xf ", geoId, "/", files[rawFile, 1], " -C ", celDir, sep=""))
 	es = frma(ReadAffy(celfile.path=celDir, compress=TRUE), summarize="robust_weighted_average")
 	unlink(celDir, recursive=TRUE)
 	
+	# Write temporary file with expression data
 	filePath = file.path(tempdir(), paste(geoId, "_frma_expression.tsv", sep=""))
 	write.table(exprs(es), file=filePath, sep="\t", quote=FALSE)
 	
