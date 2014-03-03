@@ -46,7 +46,16 @@ for (i in 1:nrow(allData)) {
 			
 	# Store results in synapse and forget about the temporary file 
 	synFile = File(path=filePath, parentId=allData[i, 2])
-	synFile = synStore(synFile, used=resources)
+	failed = TRUE
+	tries = 0
+	while (failed && (tries < 5)) {
+		res = tryCatch(synStore(synFile, used=resources),
+					   error=function(e) NA)
+		if (!is.na(res)) {
+			failed=FALSE
+		}
+		tries = tries + 1
+	}
 	unlink(filePath)
 }
 
