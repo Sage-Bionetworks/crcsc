@@ -23,7 +23,7 @@ allData = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', pu
 # Remove possible confidence files
 allData = allData[str_detect(allData[, "entity.name"], "GSE"), ]
 
-for (i in 4:nrow(allData)) {
+for (i in 1:nrow(allData)) {
 	# Get the files 
 	files = synapseQuery(paste('SELECT id, name FROM entity WHERE parentId=="', allData[i, 2], '"', sep=""))
 	rawFile = which(str_detect(files[, 1], "RAW"))
