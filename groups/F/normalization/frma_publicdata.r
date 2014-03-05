@@ -35,6 +35,7 @@ for (i in 1:nrow(allData)) {
 		dir.create(celDir)
 		system(paste("tar xf ", geoId, "/", str_replace(files[rawFile, 1], "_allsamples", ""), " -C ", celDir, sep=""))
 		es = frma(ReadAffy(celfile.path=celDir, compress=TRUE), summarize="robust_weighted_average")
+		colnames(es) = gsub(".gz", "", colnames(es))
 		unlink(celDir, recursive=TRUE)
 		
 		# Write temporary file with expression data
