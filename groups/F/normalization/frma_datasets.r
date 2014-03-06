@@ -18,7 +18,8 @@ synapseLogin()
 # Get result files
 allData = list(amc=list(synId="syn2019118", cel="syn2027094", prefix="GSE33113", filename="GSE33113_RAW.tar"),
 			   french=list(synId="syn2019116", cel="syn2026929", prefix="GSE39582", filename="GSE39582_RAW.tar"),
-			   kfsyscc=list(synId="syn2019114", cel="syn2025141", prefix="KFSYSCC", filename="kfsyscc.colon.tar.gz"),
+			   kfsyscc=list(synId="syn2019114", cel="syn2025141", prefix="KFSYSCC", filename="kfsyscc.colon.tar.gz", 
+					   		subDir="CRC322", compress=FALSE),
 			   nki=list(synId="syn2176651", cel="syn2176652", prefix="GSE35896", filename="GSE35896_RAW.tar"))
 
 for (i in names(allData)) {
@@ -33,7 +34,14 @@ for (i in names(allData)) {
 	}
 	system(command)
 	
-	es = frma(ReadAffy(celfile.path=tD, compress=TRUE), summarize="robust_weighted_average")
+	compress = TRUE
+	if (!is.null(allData[[i]]$compress)) {
+		compress = allData[[i]]$compress
+	}
+	es = frma(ReadAffy(celfile.path=file.path(tD, 
+											  ifelse(!is.null(allData[[i]]$subDir), allData[[i]]$subDir, "")),
+									compress=compress), 
+			  summarize="robust_weighted_average")
 	colnames(es) = gsub(".gz", "", colnames(es))
 	unlink(tD, recursive=TRUE)
 		
