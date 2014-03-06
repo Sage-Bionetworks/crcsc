@@ -16,20 +16,20 @@ thisScript = getPermlink(crcRepo, "groups/F/normalization/frma_datasets.r")
 synapseLogin()
 
 # Get result files
-allData = list(amc=list(synId="syn2019118", cel="syn2027094", prefix="GSE33113"),
-			   french=list(synId="syn2019116", cel="syn2026929", prefix="GSE39582"),
-			   kfsyscc=list(synId="syn2019114", cel="syn2025141", prefix="KFSYSCC"),
-			   nki=list(synId="syn2176651", cel="syn2176652", prefix="GSE35896"))
+allData = list(amc=list(synId="syn2019118", cel="syn2027094", prefix="GSE33113", filename="GSE33113_RAW.tar"),
+			   french=list(synId="syn2019116", cel="syn2026929", prefix="GSE39582", filename="GSE39582_RAW.tar"),
+			   kfsyscc=list(synId="syn2019114", cel="syn2025141", prefix="KFSYSCC", filename="kfsyscc.colon.tar.gz"),
+			   nki=list(synId="syn2176651", cel="syn2176652", prefix="GSE35896", filename="GSE35896_RAW.tar"))
 
 for (i in names(allData)) {
 	# Get the archive
-	filename = getFileLocation(synGet(allData[[i]]$cel))
-	tD = tempDir()
+	#filename = getFileLocation(synGet(allData[[i]]$cel))
+	tD = file.path("TMP", allData[[i]]$filename)
 	dir.create(tD)
 	
-	command = paste("tar xf ", filename, " -C ", tD, sep="")
-	if (str_detect(filename, "gz")) {
-		command = paste("gunzip -c ", filename, " | tar xf - -C ", tD, sep="")
+	command = paste("tar xf ", allData[[i]]$filename, " -C ", tD, sep="")
+	if (str_detect(allData[[i]]$filename, "gz")) {
+		command = paste("gunzip -c ", allData[[i]]$filename, " | tar xf - -C ", tD, sep="")
 	}
 	system(command)
 	
