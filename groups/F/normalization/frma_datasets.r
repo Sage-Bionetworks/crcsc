@@ -25,7 +25,7 @@ for (i in names(allData)) {
 	# Get the archive
 	#filename = getFileLocation(synGet(allData[[i]]$cel))
 	tD = file.path("TMP", allData[[i]]$filename)
-	dir.create(tD)
+	dir.create(tD, recursive=TRUE)
 	
 	command = paste("tar xf ", allData[[i]]$filename, " -C ", tD, sep="")
 	if (str_detect(allData[[i]]$filename, "gz")) {
@@ -42,7 +42,7 @@ for (i in names(allData)) {
 	write.table(exprs(es), file=filePath, sep="\t", quote=FALSE)
 		
 	# List with used resources
-	resources = list(list(entity=files[rawFile, 2], wasExecuted=F),
+	resources = list(list(entity=allData[[i]]$cel, wasExecuted=F),
 				     list(url=thisScript, name=basename(thisScript), wasExecuted=T))
 				
 	# Store results in synapse and forget about the temporary file 
