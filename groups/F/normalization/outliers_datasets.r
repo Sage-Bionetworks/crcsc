@@ -40,7 +40,7 @@ library(arrayQualityMetrics)
 crcRepo = getRepo("andreas-schlicker/crcsc")
 synapseHelper = getPermlink(crcRepo, "groups/F/pipeline/synapse_helper.r")
 sourceRepoFile(crcRepo, "groups/F/pipeline/synapse_helper.r")
-thisScript = getPermlink(crcRepo, "groups/F/normalization/outliers_publicdata.r")
+thisScript = getPermlink(crcRepo, "groups/F/normalization/outliers_datasets.r")
 
 synapseLogin()
 
