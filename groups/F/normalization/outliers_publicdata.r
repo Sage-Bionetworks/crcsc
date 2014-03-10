@@ -91,7 +91,7 @@ for (i in 1:nrow(allData)) {
 		write.table(outlierTable, file=filePath, sep="\t", quote=FALSE)
 		
 		# List with used resources
-		resources = list(list(entity=files[rawFile, 2], wasExecuted=F),
+		resources = list(list(entity=files[frmaFile, 2], wasExecuted=F),
 						 list(url=synapseHelper, name=basename(synapseHelper), wasExecuted=F),
 						 list(url=thisScript, name=basename(thisScript), wasExecuted=T))
 				
