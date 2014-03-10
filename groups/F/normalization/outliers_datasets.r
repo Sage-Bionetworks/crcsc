@@ -88,7 +88,7 @@ for (i in 1:length(allData)) {
 					 list(url=thisScript, name=basename(thisScript), wasExecuted=T))
 				
 	# Store results in synapse and forget about the temporary file 
-	synFile = File(path=filePath, parentId=allData[i, 2])
+	synFile = File(path=filePath, parentId=allData[[i]]$synId)
 	failed = TRUE
 	tries = 0
 	while (failed && (tries < 5)) {
