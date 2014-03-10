@@ -79,7 +79,7 @@ for (i in 1:length(allData)) {
 	outlierTable = cbind(outlierTable, Sum=rowSums(data.matrix(outlierTable)))
 		
 	# Write temporary file with expression data
-	filePath = file.path(tempdir(), paste(prefix, "_outlier_summary.tsv", sep=""))
+	filePath = file.path(tempdir(), paste(allData[[i]]$prefix, "_outlier_summary.tsv", sep=""))
 	write.table(outlierTable, file=filePath, sep="\t", quote=FALSE)
 		
 	# List with used resources
