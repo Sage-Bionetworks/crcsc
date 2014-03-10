@@ -57,6 +57,7 @@ for (i in 1:nrow(allData)) {
 	frmaFile = which(str_detect(files[, 1], "frma"))
 	geoId = unlist(str_split(allData[i, 1], "_"))[1]
 	outlierDir = file.path("OUTLIERS", geoId)
+	dir.create(outlierDir, recursive=TRUE)
 	
 	if (length(frmaFile) > 0) {
 		# Get fRMA normalized gene expression
@@ -81,7 +82,7 @@ for (i in 1:nrow(allData)) {
 		rownames(outlierTable) = aqm$arrayTable[, 2]
 		colnames(outlierTable)[1:3] = c("ArrayDist", "Boxplot", "MAplot")
 		outlierTable[outlierTable == ""] = 0
-		outlierTable[outlierTable == "x"] = 0
+		outlierTable[outlierTable == "x"] = 1
 		outlierTable = cbind(outlierTable, SVD=isOutlier[rownames(outlierTable)])
 		outlierTable = cbind(outlierTable, Sum=rowSums(data.matrix(outlierTable)))
 		
