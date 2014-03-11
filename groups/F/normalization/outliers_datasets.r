@@ -35,6 +35,7 @@ library(rGithubClient)
 library(stringr)
 library(Biobase)
 library(arrayQualityMetrics)
+library(impute)
 
 # GitHub repository
 crcRepo = getRepo("andreas-schlicker/crcsc")
@@ -55,13 +56,18 @@ allData = list(amc=list(synId="syn2019118", exprs="syn2363559", prefix="GSE33113
 			   petacc3=list(synId="syn2172604", exprs="syn2175581", prefix="PETACC3"),
 			   tcga=list(synId="syn2023932", exprs="syn2325328", prefix="TCGACRC_expression_merged"))
 
-for (i in 1:length(allData)) {
+for (i in 5:length(allData)) {
 	# Create the directory for the result plots
 	outlierDir = file.path("OUTLIERS", allData[[i]]$prefix)
 	dir.create(outlierDir, recursive=TRUE)
 	
 	# Get normalized gene expression
 	exprsMat = loadMatrix(allData[[i]]$exprs, file=ifelse(!is.null(allData[[i]]$file), allData[[i]]$file, ""))
+	# Impute missing values
+	if (sum(is.na(exprsMat)) > 0) {
+		exprsMat = impute.knn(exprsMat)$data
+	}
+	
 	exprsSet = ExpressionSet(assayData=exprsMat)
 		
 	# Perform SVD outlier detection 
