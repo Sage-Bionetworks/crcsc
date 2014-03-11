@@ -61,7 +61,7 @@ for (i in 1:length(allData)) {
 	dir.create(outlierDir, recursive=TRUE)
 	
 	# Get normalized gene expression
-	exprsMat = loadMatrix(allData[[i]]$exprs, file=ifelse(!is.null(allData[[i]]$file, allData[[i]]$file, "")))
+	exprsMat = loadMatrix(allData[[i]]$exprs, file=ifelse(!is.null(allData[[i]]$file), allData[[i]]$file, ""))
 	exprsSet = ExpressionSet(assayData=exprsMat)
 		
 	# Perform SVD outlier detection 
