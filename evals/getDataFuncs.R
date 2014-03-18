@@ -3,6 +3,7 @@ require(rGithubClient)
 
 ## SOURCE IN BACKGROUND FUNCTIONS FROM JG
 if( !exists("crcRepo") ){
+  ## IF crcRepo HAS NOT BEEN PULLED IN, GRAB IT FROM THE HEAD OF MASTER BRANCH
   crcRepo <- getRepo("Sage-Bionetworks/crcsc")
 }
 sourceRepoFile(crcRepo, "groups/G/pipeline/JGLibrary.R")
@@ -21,7 +22,7 @@ phenoObj <- setRefClass("phenoObj", fields=list(data="data.frame",
                                                 censoredFields="list"))
 
 coreDatasets <- list(amc_ajccii=dataset(exprSynId="syn2159423",phenoSynId="syn2159427"),
-                     tcga_rnaseq=dataset(exprSynId="syn2161141",phenoSynId="syn2165691"),
+                     tcga_rnaseq=dataset(exprSynId="syn2325328",phenoSynId="syn2325330"),
                      kfsyscc=dataset(exprSynId="syn2169565",phenoSynId="syn2171240"),
                      french=dataset(exprSynId="syn2171434",phenoSynId="syn2171548"),
                      petacc=dataset(exprSynId="syn2175581",phenoSynId="syn2280515"),
@@ -64,7 +65,7 @@ getDatanameForExprSynId <- function(synId){
 }
 
 groupFolders <- list(GroupA="syn2274064",
-                     GroupB="syn2274065",
+                     GroupB="syn2340706",
                      GroupC="syn2274066",
                      GroupD="syn2319015",
                      GroupE="syn2274069",
