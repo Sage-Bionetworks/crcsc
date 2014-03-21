@@ -84,7 +84,7 @@ for (i in 1:nrow(allData)) {
 				while (failed && (tries < 5)) {
 					res = tryCatch(synStore(synFile, used=resources),
 							error=function(e) NA)
-					if (!is.na(res)) {
+					if (class(res) == "File") {
 						failed=FALSE
 					}
 					tries = tries + 1
