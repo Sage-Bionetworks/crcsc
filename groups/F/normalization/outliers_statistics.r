@@ -66,7 +66,7 @@ for (i in 1:nrow(allData)) {
 			outliers = list(strict=strictOutliers(outlierSum),
 							relaxed=relaxedOutliers(outlierSum))
 			
-			baseFileName = gsub("summary.tsv", "", files[outlierFile, 1])
+			baseFileName = gsub("summary.tsv", "", files[n, 1])
 			for (k in names(outliers)) {
 				# Write temporary outlier file
 				filePath = file.path(tempdir(), paste(baseFileName, k, ".txt", sep=""))
