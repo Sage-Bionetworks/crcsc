@@ -5,6 +5,7 @@
 
 library(synapseClient)
 library(rGithubClient)
+library(stringr)
 
 # GitHib repository
 crcRepo = getRepo("andreas-schlicker/crcsc")
@@ -15,7 +16,7 @@ iNMFFunctions = getPermlink(crcRepo, "groups/F/pipeline/inmf.r")
 sourceRepoFile(crcRepo, "groups/F/pipeline/synapse_helper.r")
 helperFunctions = getPermlink(crcRepo, "groups/F/pipeline/synapse_helper.r")
 # Putting everything together
-thisScript = getPermlink(crcRepo, "groups/F/pipeline/subtyping.r")
+thisScript = getPermlink(crcRepo, "groups/F/pipeline/subtyping_celllines.r")
 
 synapseLogin()
 
@@ -33,39 +34,10 @@ iNMFSignatures = read.table(getFileLocation(synGet(iNMFSignaturesSynId)), header
 # sep: separator used in the data file; default: \t
 # quote: quote symbol used in the data file; default: none
 # annSynId: Synapse ID of the file containing sample annotation
-coreExprList = list(
-		agendia_gse42284=list(synId="syn2192792", sigId="symbol", mapSynId="syn2192791", mapId="symbol", file="GSE42284_normalized_data_matrix.txt", is.logr=TRUE),
-		agendia_ico208=list(synId="syn2192796", sigId="symbol", mapSynId="syn2192791", mapId="symbol", file="ICO208_normalized_data.txt", is.logr=TRUE),
-		agendia_vhb70=list(synId="syn2192799", sigId="symbol", mapSynId="syn2192801", mapId="GeneName", file="VHB70_normalized_data.txt", is.logr=TRUE),
-		kfsyscc=list(synId="syn2169565", is.logr=FALSE),
-		french=list(synId="syn2171434", is.logr=TRUE),
-		amc_ajccii=list(synId="syn2159423", sep=",", quote="\"", is.logr=FALSE),
-		nki_az=list(synId="syn2176657", is.logr=FALSE),
-		petacc3=list(synId="syn2175581", sigId="entrez", mapSynId="syn2199825", mapId="Entrez.GeneID", is.logr=FALSE),
-		tcga_rnaseq=list(synId="syn2161141", sigId="symbol", is.logr=FALSE),
-		mdanderson=list(synId="syn2233387", sigId="symbol", mapSynId="syn2233216", mapId="GeneName", is.logr=TRUE),
-		tcga_rnaseq_ga=list(synId="syn2326094", sigId="symbol", is.logr=FALSE),
-		tcga_rnaseq_hi=list(synId="syn2326100", sigId="symbol", is.logr=FALSE),
-		tcga_rnaseq_merged=list(synId="syn2325328", sigId="symbol", is.logr=FALSE),
-		tcga_microarray=list(synId="syn2316354", quote="\"", sigId="symbol", mapSynId="syn2316355", mapId="Gene.Symbol", is.logr=FALSE))
-
-publicExprList = list(
-		gse10961=list(synId="syn2177194", is.logr=FALSE, annSynId="syn2177195"),
-		gse13067=list(synId="syn2177888", is.logr=FALSE, annSynId="syn2177889"),
-		gse13294=list(synId="syn2177894", is.logr=FALSE, annSynId="syn2177895"),
-		gse14333=list(synId="syn2181079", is.logr=FALSE, annSynId="syn2181006"),
-		gse15960=list(synId="syn2177199", is.logr=FALSE, annSynId="syn2177200"),
-		gse17536=list(synId="syn2178137", is.logr=FALSE, annSynId="syn2178136"),
-		gse17537=list(synId="syn2178128", is.logr=FALSE, annSynId="syn2178129"),
-		gse20916=list(synId="syn2177899", is.logr=FALSE, annSynId="syn2177898"),
-		gse2109=list(synId="syn2177169", is.logr=FALSE, annSynId="syn2177168"),
-		gse23878=list(synId="syn2177902", is.logr=FALSE, annSynId="syn2178063"),
-		gse37892=list(synId="syn2178082", is.logr=FALSE, annSynId="syn2178089"),
-		gse4107=list(synId="syn2177179", is.logr=FALSE, annSynId="syn2177180"),
-		gse4183=list(synId="syn2177187", is.logr=FALSE, annSynId="syn2177188"),
-		gse8671=list(synId="syn2181088", is.logr=FALSE, annSynId="syn2181090"))
-
-allData = c(coreExprList, publicExprList)
+allData = list(gse8332=list(synId="syn2181082", is.logr=TRUE, loc="last"),
+			   gsk=list(synId="syn2181084", is.logr=FALSE, loc="first"),
+			   sanger=list(synId="syn2181097", is.logr=FALSE),
+			   ccle=list(synId="syn2292137", is.logr=FALSE, sigId="entrez"))
 
 # Subtyping
 allResults = list()
@@ -89,8 +61,16 @@ for (n in names(allData)) {
 	}
 	data.mat = loadMatrix(x$synId, file=file, sep=sep, quote=quote)
 	
+	if (n == "ccle") {
+		rownames(data.mat) = unlist(lapply(str_split(rownames(data.mat), "_"), function(x) { x[1] }))
+	}
+	
 	if (!x$is.logr) {
 		data.mat = data.mat - apply(data.mat, 1, mean)
+	}
+	
+	if (!is.null(x$loc)) {
+		data.mat = averageReplicates(data.mat, x$loc)
 	}
 	
 	sig.id = "ps"
@@ -101,7 +81,7 @@ for (n in names(allData)) {
 	mapping = NULL
 	if (!is.null(x$mapSynId)) {
 		# Get the mapping from data set IDs to signature IDs
-		map.mat = loadMatrix(x$mapSynId, quote=quote)
+		map.mat = loadMatrix(x$mapSynId)
 		mapping = getMapping(map.mat, x$mapId)
 	}
 	# Get the iNMF signatures

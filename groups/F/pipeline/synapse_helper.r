@@ -33,9 +33,11 @@ loadMatrix = function(synId, file="", sep="\t", quote=""){
 					 check.names=FALSE)
 	
 	# Remove duplicates
-	dupls = which(duplicated(raw[, 1]))
-	if (length(dupls) > 0) {
-		raw = raw[-dupls, ]
+	if (!is.numeric(raw[, 1])) {
+		dupls = which(duplicated(raw[, 1]))
+		if (length(dupls) > 0) {
+			raw = raw[-dupls, ]
+		}
 	}
 	
 	# Create the matrix
@@ -63,4 +65,31 @@ getMapping = function(anno, colName) {
 	rownames(map) = rownames(anno)
 	
 	map
+}
+
+##' Average replicates in the matrix. Colnames are split at "_" and 
+##' the element at "loc" in the resulting vector is used to identify replicates.
+##' The name of the first replicate is used as column name in the output.
+##' @param mat data matrix, samples in columns and features in rows
+##' @param loc "first" or "last", element of the column name (separated by "_")
+##' that identifies replicates; default: "first"
+##' @return data matrix with averaged replicates
+##' @author Andreas Schlicker
+averageReplicates = function(mat, loc=c("first", "last")) {
+	require(stringr) || stop("Can't load required package \"stringr\"!")
+	# Get the cell line name
+	loc = match.arg(loc)
+	clName = unlist(lapply(str_split(colnames(mat), "_"), function(x) { if (loc == "last") el=length(x) else el = 1; x[el] }))
+	# Which samples map to which cell line
+	replicates = lapply(unique(clName), function(x) { which(clName == x) })
+	names(replicates) = unique(clName)
+	
+	resMat = matrix(NA, nrow=nrow(mat), ncol=length(replicates))
+	rownames(resMat) = rownames(mat)
+	colnames(resMat) = unlist(lapply(replicates, function(x) { colnames(mat)[x[1]] }))
+	for (i in 1:length(replicates)) {
+		resMat[, i] = apply(mat[, replicates[[i]], drop=FALSE], 1, mean)
+	}
+	
+	resMat
 }

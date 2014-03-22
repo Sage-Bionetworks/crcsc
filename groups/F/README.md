@@ -18,6 +18,10 @@ subtyping.r
 ---------------
 Script that automatically downloads all data sets, subtypes them and stores the sample/subtype probability matrix in Synapse. The script also takes care of provenance recording.
 
+subtyping_celllines.r
+---------------
+Script for subtyping the cell line sets; upload the sample/subtype probability matrix to Synapse. The script also takes care of provenance recording.
+
 plotting.r
 -----------
 Some functions for creating diagnostic plots for the subtyping.
