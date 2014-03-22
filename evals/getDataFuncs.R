@@ -54,7 +54,7 @@ publicDatasets <- list(gse10961=dataset(exprSynId="syn2177194",phenoSynId="syn21
 
 cellLineDatasets <- list(ccle=dataset(exprSynId="syn2292137"),
                       sanger=dataset(exprSynId="syn2181097"),
-                      gsk=dataset(exprSynId="syn2181084"));
+                      gsk=dataset(exprSynId="syn2181084"))
 
 patientDatasets <- c(coreDatasets, publicDatasets)
 allDatasets <- c(patientDatasets, cellLineDatasets)
@@ -379,8 +379,9 @@ getExprSet <- function(ds){
          french=toEntrez(exprSynId, NULL, u133plus2Map),
          amc_ajccii=toEntrez(exprSynId, NULL, u133plus2Map,sep=","),
          nki_az=toEntrez(exprSynId, NULL, u133plus2Map),
-         petacc3=toEntrez(exprSynId, NULL, petaccMap),
+         petacc=toEntrez(exprSynId, NULL, petaccMap),
          tcga_rnaseq=toEntrez(exprSynId, NULL, symbolMap),
+         tcga_rnaseqAll=toEntrez(exprSynId, NULL, symbolMap),
          
          gse10961=toEntrez(exprSynId, phenoSynId),
          gse13067=toEntrez(exprSynId, phenoSynId),
@@ -395,8 +396,12 @@ getExprSet <- function(ds){
          gse4107=toEntrez(exprSynId, phenoSynId),
          gse4183=toEntrez(exprSynId, phenoSynId),
          gse8671=toEntrez(exprSynId, phenoSynId),
-         gse18088=toEntrez(exprSynId, phenoSynId),
-         gse26682=toEntrez(exprSynId, phenoSynId),
+         gse18088=toEntrez(exprSynId),
+         gse26682=toEntrez(exprSynId),
+         
+         ccle=toEntrez(exprSynId),
+         sanger=toEntrez(exprSynId),
+         gsk=toEntrez(exprSynId),
          NA)
 }
 
