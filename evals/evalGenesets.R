@@ -149,31 +149,32 @@ fcSyn <- synStore(File(path=fcFile, parentId="syn2322802", group=group, dataset=
 #####
 
 ## GLOBAL TEST (NON COMPETITIVE)
-gtResults <- sapply(as.list(1:nSubtypes), function(i){
-  resp <- st[, i]
-  op <- sapply(genesets, function(gs){
-    gtModel <- gt(response=factor(resp), alternative=d[ gs, ])
-    gtModel@result[1, "p-value"]
-  })
-  names(op) <- names(genesets)
-  op
-})
-colnames(gtResults) <- colnames(st)
-
-gtFile <- file.path(tempdir(), paste("gt-", group, "-", ds, ".tsv", sep=""))
-write.table(gtResults, file=gtFile, quote=F, sep="\t", col.names=NA)
-gtSyn <- synStore(File(path=gtFile, parentId="syn2322802", group=group, dataset=ds, method="globaltest", evalDate=as.character(Sys.Date())), 
-                  activity=Activity(name="geneset evaluation",
-                                    used=list(
-                                      list(name=basename(code1), url=code1, wasExecuted=F),
-                                      list(name=basename(code2), url=code2, wasExecuted=F),
-                                      list(name=basename(code3), url=code3, wasExecuted=F),
-                                      list(name=basename(code4), url=code4, wasExecuted=F),
-                                      list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
-                                      list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
-                                      list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
-                                      list(name=basename(thisCode), url=thisCode, wasExecuted=T)
-                                    )))
+## REMOVED FOR NOW - POOR PERFORMANCE FOR FRENCH AND PETACC DATASETS
+# gtResults <- sapply(as.list(1:nSubtypes), function(i){
+#   resp <- st[, i]
+#   op <- sapply(genesets, function(gs){
+#     gtModel <- gt(response=factor(resp), alternative=d[ gs, ])
+#     gtModel@result[1, "p-value"]
+#   })
+#   names(op) <- names(genesets)
+#   op
+# })
+# colnames(gtResults) <- colnames(st)
+# 
+# gtFile <- file.path(tempdir(), paste("gt-", group, "-", ds, ".tsv", sep=""))
+# write.table(gtResults, file=gtFile, quote=F, sep="\t", col.names=NA)
+# gtSyn <- synStore(File(path=gtFile, parentId="syn2322802", group=group, dataset=ds, method="globaltest", evalDate=as.character(Sys.Date())), 
+#                   activity=Activity(name="geneset evaluation",
+#                                     used=list(
+#                                       list(name=basename(code1), url=code1, wasExecuted=F),
+#                                       list(name=basename(code2), url=code2, wasExecuted=F),
+#                                       list(name=basename(code3), url=code3, wasExecuted=F),
+#                                       list(name=basename(code4), url=code4, wasExecuted=F),
+#                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+#                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+#                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+#                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+#                                     )))
 
 
 ## GSA
