@@ -13,19 +13,24 @@ code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
 sourceRepoFile(crcRepo, "evals/getDataFuncs.R")
 code3 <- getPermlink(crcRepo, "evals/getDataFuncs.R")
 
-
 ## QUERY FOR OUR RESULTS
-resQ <- synapseQuery("SELECT id, name, group, dataset, method, stat FROM file WHERE parentId=='syn2322802'")
+resQ <- synapseQuery("SELECT id, name, group, dataset, method, stat, evalDate FROM file WHERE parentId=='syn2322802'")
 gsQ <- resQ[ resQ$file.method != "eBayes", ]
+gsQ$file.evalDate <- as.Date(gsQ$file.evalDate)
+gsQ <- gsQ[ which(gsQ$file.evalDate > as.Date("2014-03-18")), ]
+## REMOVE ORIGINAL TCGA AND CELL LINE DATASETS
+gsQ <- gsQ[ -which(gsQ$file.dataset %in% c("tcga_rnaseq", "sanger", "gsk", "ccle")), ]
 
 dss <- unique(gsQ$file.dataset)
 gps <- unique(gsQ$file.group)
+
 
 ## PULL IN ALL OF THE RESULT MATRICES FROM THE GENESET ANALYSES
 allDat <- lapply(as.list(gsQ$file.id), function(x){
   a <- synGet(x)
   read.delim(getFileLocation(a), as.is=T, header=T, row.names=1)
 })
+
 
 ## INDICATOR MATRICES TO SHOW SIGNIFICANCE AT DIFFERENT LEVELS
 allDatInd05 <- lapply(allDat, function(x){
@@ -41,7 +46,9 @@ theseComp <- gsQ[ compInd, ]
 compDat <- allDat[ compInd ]
 compDatInd05 <- allDatInd05[ compInd ]
 compDatInd001 <- allDatInd001[ compInd ]
-
+gsaInd <- which(gsQ$file.method == "gsa")
+theseGsa <- gsQ[ gsaInd, ]
+gsaDat <- allDat[ gsaInd ]
 
 ## COLLAPSE TO SEE IF EITHER COMPETITIVE MODEL SHOWS SIGNIFICANCE
 ## FOR EACH GROUP AND DATASET
@@ -87,7 +94,7 @@ for(i in names(compResGp05) ){
   png(plotPath, width=900, height=600)
   show(p)
   dev.off()
-  synPlot <- synStore(File(path=plotPath, parentId="syn2323838"),
+  synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
                       activity=Activity(name="geneset plots",
                                         used=as.list(theseComp$file.id)))
 }
@@ -105,9 +112,39 @@ for(i in names(compResGp001) ){
   png(plotPath, width=900, height=600)
   show(p)
   dev.off()
-  synPlot <- synStore(File(path=plotPath, parentId="syn2323838"),
+  synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
                       activity=Activity(name="geneset plots",
                                         used=as.list(theseComp$file.id)))
+}
+
+
+## PLOTS PER GROUP
+## FISHER META ANALYSIS P-VALUE
+# 1 - pchisq(-2 * sum(log(pvals)),2 * length(pvals))
+for(gp in gps){
+  idx <- which( theseGsa$file.group == gp )
+  
+  chsq <- -2*Reduce("+", lapply(gsaDat[ idx ], function(x) log(x+10^-6)))
+  pval <- apply(chsq, c(1,2), function(x){
+    min(1-pchisq(x, 2*length(idx)) + 10^-6, 1)
+  })
+  x <- -1*log10(pval)
+  
+  plotDF <- data.frame(geneset = rep(rownames(x), ncol(x)),
+                       subtype = rep(colnames(x), each=nrow(x)),
+                       count = as.numeric(x))
+  p <- ggplot(data=plotDF, aes(x=subtype, y=count, fill=subtype)) +
+    geom_bar(stat="identity") + xlab("") + ylab("-log10(fisher meta analysis pval)") + ggtitle(gp) +
+    facet_wrap(facets=(~ geneset), ncol=3)
+  
+  plotPath <- file.path(tempdir(), paste("genesetsMetaAnalysis-", gp, ".png", sep=""))
+  png(plotPath, width=900, height=600)
+  show(p)
+  dev.off()
+  synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
+                      activity=Activity(name="geneset plots",
+                                        used=as.list(theseGsa$file.id)))
+  
 }
 
 
@@ -138,7 +175,7 @@ for(ds in dss){
     png(plotPath, width=900, height=600)
     show(p)
     dev.off()
-    synPlot <- synStore(File(path=plotPath, parentId="syn2323838"),
+    synPlot <- synStore(File(path=plotPath, parentId="syn2420834"),
                         activity=Activity(name="geneset plots",
                                           used=as.list(plotDF$file.id)))
   }
