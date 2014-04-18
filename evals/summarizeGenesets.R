@@ -13,6 +13,10 @@ code2 <- getPermlink(crcRepo, "groups/G/pipeline/subtypePipelineFuncs.R")
 sourceRepoFile(crcRepo, "evals/getDataFuncs.R")
 code3 <- getPermlink(crcRepo, "evals/getDataFuncs.R")
 
+## THIS SCRIPT
+thisCode <- getPermlink(crcRepo, "evals/summarizeGenesets.R")
+resFold <- synGet("syn2322802")
+
 ## QUERY FOR OUR RESULTS
 resQ <- synapseQuery("SELECT id, name, group, dataset, method, stat, evalDate FROM file WHERE parentId=='syn2322802'")
 gsQ <- resQ[ resQ$file.method != "eBayes", ]
@@ -49,6 +53,10 @@ compDatInd001 <- allDatInd001[ compInd ]
 gsaInd <- which(gsQ$file.method == "gsa")
 theseGsa <- gsQ[ gsaInd, ]
 gsaDat <- allDat[ gsaInd ]
+## THRESHOLD GSA RESULTS TO LOWER LIMIT OF DETECTION
+gsaDat <- lapply(gsaDat, function(x){
+  apply(x, c(1,2), function(y){ max(y, 0.0001) })
+})
 
 ## COLLAPSE TO SEE IF EITHER COMPETITIVE MODEL SHOWS SIGNIFICANCE
 ## FOR EACH GROUP AND DATASET
@@ -96,7 +104,9 @@ for(i in names(compResGp05) ){
   dev.off()
   synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
                       activity=Activity(name="geneset plots",
-                                        used=as.list(theseComp$file.id)))
+                                        used=list(
+                                          list(url=thisCode, name=basename(thisCode), wasExecuted=T),
+                                          list(entity=resFold, wasExecuted=F))))
 }
 ## FOR SIGNIFICANCE AT 0.001
 for(i in names(compResGp001) ){
@@ -114,7 +124,9 @@ for(i in names(compResGp001) ){
   dev.off()
   synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
                       activity=Activity(name="geneset plots",
-                                        used=as.list(theseComp$file.id)))
+                                        used=list(
+                                          list(url=thisCode, name=basename(thisCode), wasExecuted=T),
+                                          list(entity=resFold, wasExecuted=F))))
 }
 
 
@@ -124,11 +136,14 @@ for(i in names(compResGp001) ){
 for(gp in gps){
   idx <- which( theseGsa$file.group == gp )
   
-  chsq <- -2*Reduce("+", lapply(gsaDat[ idx ], function(x) log(x+10^-6)))
+  chsq <- -2*Reduce("+", lapply(gsaDat[ idx ], log))
   pval <- apply(chsq, c(1,2), function(x){
-    min(1-pchisq(x, 2*length(idx)) + 10^-6, 1)
+    1-pchisq(x, 2*length(idx))
   })
   x <- -1*log10(pval)
+  x <- apply(x, c(1,2), function(y){
+    min(y, 20)
+  })
   
   plotDF <- data.frame(geneset = rep(rownames(x), ncol(x)),
                        subtype = rep(colnames(x), each=nrow(x)),
@@ -143,8 +158,9 @@ for(gp in gps){
   dev.off()
   synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
                       activity=Activity(name="geneset plots",
-                                        used=as.list(theseGsa$file.id)))
-  
+                                        used=list(
+                                          list(url=thisCode, name=basename(thisCode), wasExecuted=T),
+                                          list(entity=resFold, wasExecuted=F))))
 }
 
 
@@ -177,7 +193,9 @@ for(ds in dss){
     dev.off()
     synPlot <- synStore(File(path=plotPath, parentId="syn2420834"),
                         activity=Activity(name="geneset plots",
-                                          used=as.list(plotDF$file.id)))
+                                          used=list(
+                                            list(url=thisCode, name=basename(thisCode), wasExecuted=T),
+                                            list(entity=resFold, wasExecuted=F))))
   }
 }
 
