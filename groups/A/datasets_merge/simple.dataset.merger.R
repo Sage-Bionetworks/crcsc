@@ -19,7 +19,8 @@ load("gene.filtered.0.75.0.5.Rdata")
 
 dataset.list <- c("agendia_gse42284", "agendia_ico208",  "agendia_vhb70",    "amc_ajccii",      
 	"french",           "kfsyscc",          "mdanderson",       "nki_az",          
-    "petacc3",          "tcgacrc_merged",   "gse10961",         "gse13294",         "gse14333",        
+    "petacc3",          "tcgacrc_merged",   "gse10961",		"gse13067",         "gse13294",         
+	"gse14333",        
 	"gse15960",         "gse17537",         "gse20916",         "gse2109" ,        
     "gse23878",         "gse37892",         "gse4107",          "gse4183" ,        
 	"gse8671",          "gse17536"        
