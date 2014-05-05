@@ -82,15 +82,18 @@ helperFunctions <- getPermlink(crcRepo, "groups/A/pipeline/synapseHelper.R")
 synapseLogin("pangelino@gmail.com", apiKey = "VV3zVgd82cOib3Evqu3zGfFQbAYfETXNuNR4t3qDkp42nZk0IfVTItX7Z32gQ4s0UY/7qMptmFgytwyAuIyAng==")
 
 projectPath <- synGet("syn2417811")
-myFolder <- Folder(name = "Merged_Datasets", parentId=projectPath$properties$id)
-myFolder <- synStore(myFolder)
-plotFile <- File(path="./merged.datasets.Rdata", parentId=myFolder$properties$id)
-plotFile <- synStore(plotFile)
-plotFile <- File(path="./merged.datasets.renamed.Rdata", parentId=myFolder$properties$id)
-plotFile <- synStore(plotFile)
+
+# Uncomment to create results folder on synapse
+# myFolder <- Folder(name = "Merged_Datasets", parentId=projectPath$properties$id)
+# myFolder <- synStore(myFolder)
 
 myFolder <- synGet("syn2417826")
 message(paste("Uploading datasets"))	
+
+upFile <- File(path="./merged.datasets.Rdata", parentId=myFolder$properties$id)
+upFile <- synStore(plotFile)
+upFile <- File(path="./merged.datasets.renamed.Rdata", parentId=myFolder$properties$id)
+upFile <- synStore(plotFile)
 for (n in dataset.list) {
 	message(paste("Now processing ", n, "..."))	
 	upFile <- File(path=paste0(n,".selected.norm.Rdata"), parentId=myFolder$properties$id)

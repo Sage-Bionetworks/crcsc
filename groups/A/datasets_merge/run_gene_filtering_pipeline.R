@@ -2,6 +2,7 @@ library(rGithubClient)
 crcRepo <- getRepo("sib-bcf/crcsc")
 
 work.dir <- "/export/scratch/paolo/SageCRCsubtyping/analysis/work/test"
+setwd(work.dir)
 
 # get helper functions
 sourceRepoFile(crcRepo, "groups/A/pipeline/synapseHelper.R")
