@@ -37,7 +37,9 @@ petaccMap <- function(ids) {
                       header = TRUE, comment = "")
     idxs <- match(ids, tbl$ProbesetID)
     stopifnot(!any(is.na(idxs)))
-    return(tbl$Entrez.GeneID[idxs])
+	out <- tbl$Entrez.GeneID[idxs]
+	names(out) <- tbl$ProbesetID[idxs]
+	return(out)
 }
 
 ## DiscoverPrint_19742 probeset IDs to Entrez Gene IDs
@@ -70,8 +72,8 @@ tcga_agilentMap <- function(ids) {
     tbl <- read.delim(file, sep = "\t", as.is = TRUE,
                       header = TRUE)
     idxs <- match(ids, tbl$CLID)
-    stopifnot(!any(is.na(idxs)))
-    genesymbols <- tbl$Gene.Symbol[idxs]
+	stopifnot(!any(is.na(idxs)))
+    genesymbols <- tbl$Gene.Symbol[idxs]	
     entrezID <- rep(NA, length(genesymbols))
     temp <- which(genesymbols != "")
     gstemp <- genesymbols[temp]
@@ -80,7 +82,8 @@ tcga_agilentMap <- function(ids) {
                     function(x) paste(x, collapse = "//"))
     entrezID[temp] <- temp2
     entrezID[entrezID == "NA"] <- NA
-    return(entrezID)
+	names(entrezID) <- tbl$CLID[idxs]
+	return(entrezID)
 }
 
 ## #####################################################
