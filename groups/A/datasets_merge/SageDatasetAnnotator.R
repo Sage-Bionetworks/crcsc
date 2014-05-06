@@ -72,10 +72,10 @@ for (n in names(exprList)) {
 	rm(M, X, probes.ID)
 }
 
-# save dataset matrices
-dataset.list <- names(exprList)
-save(file=paste0(out.dir,"dataset.list.Rdata"), dataset.list)
-
+# Load dataset list
+if (!exists("dataset.list")) {
+	load("dataset.list.Rdata")
+}
 
 # Find common genes
 ## ---- Find common genes ---------------------

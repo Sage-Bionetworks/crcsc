@@ -20,7 +20,7 @@ crcRepo <- getRepo("sib-bcf/crcsc")
 source("/export/scratch/paolo/workspace/Rworks/crcsc/groups/A/pipeline/synapseHelper.R")
 helperFunctions <- getPermlink(crcRepo, "groups/A/pipeline/synapseHelper.R")
 
-synapseLogin("pangelino@gmail.com", apiKey = "VV3zVgd82cOib3Evqu3zGfFQbAYfETXNuNR4t3qDkp42nZk0IfVTItX7Z32gQ4s0UY/7qMptmFgytwyAuIyAng==")
+synapseLogin("pangelino@gmail.com", apiKey = "")
 
 
 ## Define the datasets to work with
@@ -115,7 +115,21 @@ exprList <- list(agendia_gse42284 = list(synId = "syn2192792",
 				gse4183 = "",
 				gse8671 = "",
 				gse17536 = "syn2374649")
+
 		
+# datasets selected for merging		
+dataset.list <- c("agendia_gse42284", "agendia_ico208",  "agendia_vhb70",    "amc_ajccii",      
+				"french",           "kfsyscc",          "mdanderson",       "nki_az",          
+				"petacc3",          "tcgacrc_merged",   "gse10961",		"gse13067",         "gse13294",         
+				"gse14333",        
+				"gse15960",         "gse17537",         "gse20916",         "gse2109" ,        
+				"gse23878",         "gse37892",         "gse4107",          "gse4183" ,        
+				"gse8671",          "gse17536")
+exprList <- exprList[dataset.list]		
+
+# save dataset list
+save(file=paste0(work.dir,"dataset.list.Rdata"), dataset.list)
+
 # loading datasets		
 for (n in names(exprList)) {
 	tryCatch({

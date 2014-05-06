@@ -44,7 +44,7 @@ if (!exists("M.sets")) {
 }
 
 m.ALL <- NULL
-rename.sample <- TRUE
+rename.sample <- FALSE
 for (n in names(M.sets)) {
 	M.sets[[n]] <- M.sets[[n]][,gene.list]
 	if (rename.sample) {
@@ -79,7 +79,7 @@ crcRepo <- getRepo("sib-bcf/crcsc")
 sourceRepoFile(crcRepo, "groups/A/pipeline/synapseHelper.R")
 helperFunctions <- getPermlink(crcRepo, "groups/A/pipeline/synapseHelper.R")
 
-synapseLogin("pangelino@gmail.com", apiKey = "VV3zVgd82cOib3Evqu3zGfFQbAYfETXNuNR4t3qDkp42nZk0IfVTItX7Z32gQ4s0UY/7qMptmFgytwyAuIyAng==")
+synapseLogin("pangelino@gmail.com", apiKey = "")
 
 projectPath <- synGet("syn2417811")
 
@@ -90,18 +90,21 @@ projectPath <- synGet("syn2417811")
 myFolder <- synGet("syn2417826")
 message(paste("Uploading datasets"))	
 
-upFile <- File(path="./merged.datasets.Rdata", parentId=myFolder$properties$id)
-upFile <- synStore(plotFile)
-upFile <- File(path="./merged.datasets.renamed.Rdata", parentId=myFolder$properties$id)
-upFile <- synStore(plotFile)
+if (! rename.sample){
+	upFile <- File(path="./merged.datasets.Rdata", parentId=myFolder$properties$id)
+	upFile <- synStore(upFile)
+} else {
+	upFile <- File(path="./merged.datasets.renamed.Rdata", parentId=myFolder$properties$id)
+	upFile <- synStore(upFile)
+}
 for (n in dataset.list) {
 	message(paste("Now processing ", n, "..."))	
 	upFile <- File(path=paste0(n,".selected.norm.Rdata"), parentId=myFolder$properties$id)
 	upFile <- synStore(upFile)
 }
 
-upFile <- File(path="README", parentId=myFolder$properties$id)
-upFile <- synStore(upFile)
+#upFile <- File(path="README", parentId=myFolder$properties$id)
+#upFile <- synStore(upFile)
 
 
 
