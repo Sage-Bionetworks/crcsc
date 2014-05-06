@@ -21,4 +21,27 @@ data set.
 ---
 The function for training or applying a module-based LDA classifier. 
 
+## run_gene_filtering_pipeline.R
+---
+The script which runs the probe selection/gene filtering/dataset normalization/merging pipeline
+
+## get_datasets_from_synapse.R
+---
+script to load datasets from synapse
+
+# SageDatasetAnnotator.R
+---
+script to annotate datasets and select reference genes by mad
+
+# probes.cor.selection.R
+script to select probes by computing cor(cor)
+
+# normalize.datasets.R
+Script to normalize datasets with ComBat using MSI-like signature as covariate
+
+# gene.filtering.R
+Script to filter genes by quantile range (0.05, 0.95), and correlations
+
+# simple.dataset.merger.R
+Script to merge datasets and write the merged matrix
 
