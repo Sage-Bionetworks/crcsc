@@ -54,7 +54,8 @@ thisCode <- getPermlink(crcRepo, "evals/evalGenesetsConsensus.R")
 #####
 
 ## GET CONSENSUS RESULTS
-c <- synGet("syn2469968")
+grpResId <- "syn2469968"
+c <- synGet("grpResId")
 cms <- read.csv(getFileLocation(c), as.is=T)
 d <- sapply(strsplit(cms$dataset.sample, ".", fixed=T), "[", 1)
 cms$dataset <- d
