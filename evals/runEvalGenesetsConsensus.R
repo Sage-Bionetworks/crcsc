@@ -15,7 +15,7 @@ dss <- names(table(cms$dataset))
 sgeFile <- "/shared/code/R/runTheseConsensus.sh"
 sgeText <- c("#!/bin/bash")
 for(d in dss){
-  sgeCommand <- paste("qsub -V -wd /shared/code/repos/crcsc/evals -N ", g, "-", d, " -b y -o /shared/tmp/eoFiles -e /shared/tmp/eoFiles /usr/bin/Rscript evalGenesetsConsensus.R ", d, sep="")
+  sgeCommand <- paste("qsub -V -wd /shared/code/repos/crcsc/evals -N ", d, " -b y -o /shared/tmp/eoFiles -e /shared/tmp/eoFiles /usr/bin/Rscript evalGenesetsConsensus.R ", d, sep="")
   sgeText <- c(sgeText, sgeCommand)
 }
 
