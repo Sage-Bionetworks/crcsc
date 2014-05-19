@@ -57,7 +57,7 @@ plotPath <- file.path(tempdir(), paste("genesetsMetaAnalysis-", gp, ".png", sep=
 png(plotPath, width=900, height=600)
 show(p)
 dev.off()
-synPlot <- synStore(File(path=plotPath, parentId="syn2420832"),
+synPlot <- synStore(File(path=plotPath, parentId="syn2476110"),
                     activity=Activity(name="geneset plots",
                                       used=list(
                                         list(url=thisCode, name=basename(thisCode), wasExecuted=T),
