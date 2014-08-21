@@ -388,6 +388,7 @@ getExprSet <- function(ds){
          gse13294=toEntrez(exprSynId, phenoSynId),
          gse14333=toEntrez(exprSynId, phenoSynId),
          gse15960=toEntrez(exprSynId, phenoSynId),
+         gse17536=toEntrez(exprSynId, phenoSynId),
          gse17537=toEntrez(exprSynId, phenoSynId),
          gse20916=toEntrez(exprSynId, phenoSynId),
          gse2109=toEntrez(exprSynId, phenoSynId),
