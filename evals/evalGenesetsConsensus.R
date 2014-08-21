@@ -54,21 +54,22 @@ thisCode <- getPermlink(crcRepo, "evals/evalGenesetsConsensus.R")
 #####
 
 ## GET CONSENSUS RESULTS
-grpResId <- "syn2469968"
+grpResId <- "syn2533623"
 c <- synGet(grpResId)
 cms <- read.csv(getFileLocation(c), as.is=T)
-d <- sapply(strsplit(cms$dataset.sample, ".", fixed=T), "[", 1)
+d <- sapply(strsplit(cms$NewCMS4_unclear, ".", fixed=T), "[", 1)
 cms$dataset <- d
-cms <- cms[cms$dataset != "tcga_rnaseq", ]
-samp <- sapply(strsplit(cms$dataset.sample, ".", fixed=T), "[", 2)
+cms$dataset[ cms$dataset == "tcgacrc_merged" ] <- "tcga_rnaseqAll"
+samp <- sapply(strsplit(cms$NewCMS4_unclear, ".", fixed=T), "[", 2)
 cms$sample <- samp
 rownames(cms) <- samp
-
+## REMOVE SAMPLES WITHOUT A CLEAR SUBTYPE
+cms <- cms[ !is.na(cms$cms4_filt), ]
 cms <- cms[ cms$dataset == ds, ]
 
-theseCfs <- names(table(cms$cms4))
+theseCfs <- names(table(cms$cms4_filt))
 tmp <- lapply(as.list(theseCfs), function(x){
-  as.numeric(cms$cms4 == x)
+  as.numeric(cms$cms4_filt == x)
 })
 st <- do.call(cbind, tmp)
 colnames(st) <- theseCfs
@@ -177,3 +178,23 @@ gsaSyn <- synStore(File(path=gsaFile, parentId="syn2476109", group=group, datase
                                        list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                      )))
 
+gsaHiScores <- sapply(gsaResults, function(r){
+  r$GSA.scores
+})
+rownames(gsaHiScores) <- names(genesets)
+colnames(gsaHiScores) <- colnames(st)
+
+gsaScores <- file.path(tempdir(), paste("gsaScores-", group, "-", ds, ".tsv", sep=""))
+write.table(gsaHiScores, file=gsaScores, quote=F, sep="\t", col.names=NA)
+gsaSyn <- synStore(File(path=gsaScores, parentId="syn2476109", group=group, dataset=ds, method="gsaScores", evalDate=as.character(Sys.Date())), 
+                   activity=Activity(name="geneset evaluation",
+                                     used=list(
+                                       list(name=basename(code1), url=code1, wasExecuted=F),
+                                       list(name=basename(code2), url=code2, wasExecuted=F),
+                                       list(name=basename(code3), url=code3, wasExecuted=F),
+                                       list(name=basename(code4), url=code4, wasExecuted=F),
+                                       list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
+                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
+                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
+                                     )))

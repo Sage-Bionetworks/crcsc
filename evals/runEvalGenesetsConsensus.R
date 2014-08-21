@@ -3,12 +3,12 @@ source("/shared/code/R/.Rprofile")
 require(synapseClient)
 
 ## GET CONSENSUS RESULTS
-grpResId <- "syn2469968"
+grpResId <- "syn2533623"
 c <- synGet(grpResId)
 cms <- read.csv(getFileLocation(c), as.is=T)
-d <- sapply(strsplit(cms$dataset.sample, ".", fixed=T), "[", 1)
+d <- sapply(strsplit(cms$NewCMS4_unclear, ".", fixed=T), "[", 1)
 cms$dataset <- d
-cms <- cms[cms$dataset != "tcga_rnaseq", ]
+cms$dataset[ cms$dataset == "tcgacrc_merged" ] <- "tcga_rnaseqAll"
 
 dss <- names(table(cms$dataset))
 
