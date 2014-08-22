@@ -60,6 +60,7 @@ cms <- read.csv(getFileLocation(c), as.is=T)
 d <- sapply(strsplit(cms$NewCMS4_unclear, ".", fixed=T), "[", 1)
 cms$dataset <- d
 cms$dataset[ cms$dataset == "tcgacrc_merged" ] <- "tcga_rnaseqAll"
+cms$dataset[ cms$dataset == "petacc3" ] <- "petacc"
 samp <- sapply(strsplit(cms$NewCMS4_unclear, ".", fixed=T), "[", 2)
 cms$sample <- samp
 rownames(cms) <- samp
