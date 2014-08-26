@@ -27,6 +27,19 @@ load.gmt.data <- function(gmt.file.path){
   return (gsets)
 }
 
+load.gmt.data2 <- function(gmt.file.path){
+  tmp <- readLines(gmt.file.path)
+  gsets <- list()
+  for(i in 1:length(tmp)){
+    t <- strsplit(tmp[i],'\t')[[1]]
+    t2 <- unlist(sapply(t[2:length(t)], function(x){ 
+      strsplit(x,"///")
+    }),use.names=FALSE)
+    gsets[[t[1]]] <- gsub(" ","",t2)
+  }
+  return (gsets)
+}
+
 
 normalize_to_X <- function(mean.x, sd.x, Y){
   m.y <- rowMeans(Y)
