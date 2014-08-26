@@ -85,7 +85,7 @@ d <- d[, as.character(rownames(st)) ]
 d <- d[apply(exprs(d), 1, sd) != 0, ]
 
 ## GET THE GENESETS
-genesets <- load.gmt.data(getFileLocation(synGet("syn2321865")))
+genesets <- load.gmt.data2(getFileLocation(synGet("syn2321865")))
 genesets <- lapply(genesets, function(x){
   x <- x[ x != "" ]
   x <- unlist(symbolMap(x))
