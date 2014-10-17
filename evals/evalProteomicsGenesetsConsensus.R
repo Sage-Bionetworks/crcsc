@@ -106,7 +106,7 @@ pvalSyn <- synStore(File(path=pvalFile, parentId="syn2476109", group=group, data
                                         list(name=basename(code2), url=code2, wasExecuted=F),
                                         list(name=basename(code3), url=code3, wasExecuted=F),
                                         list(name=basename(code4), url=code4, wasExecuted=F),
-                                        list(entity=dd, downloadFile=F), wasExecuted=F),
+                                        list(entity=dd, wasExecuted=F),
                                         list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                         list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                       )))
@@ -120,7 +120,7 @@ fcSyn <- synStore(File(path=fcFile, parentId="syn2476109", group=group, dataset=
                                       list(name=basename(code2), url=code2, wasExecuted=F),
                                       list(name=basename(code3), url=code3, wasExecuted=F),
                                       list(name=basename(code4), url=code4, wasExecuted=F),
-                                      list(entity=synGet(allDatasets[[ds]]$exprSynId, downloadFile=F), wasExecuted=F),
+                                      list(entity=dd, wasExecuted=F),
                                       list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                       list(name=basename(thisCode), url=thisCode, wasExecuted=T)
                                     )))
@@ -155,7 +155,7 @@ gsaSyn <- synStore(File(path=gsaFile, parentId="syn2476109", group=group, datase
                                        list(name=basename(code2), url=code2, wasExecuted=F),
                                        list(name=basename(code3), url=code3, wasExecuted=F),
                                        list(name=basename(code4), url=code4, wasExecuted=F),
-                                       list(entity=dd, downloadFile=F), wasExecuted=F),
+                                       list(entity=dd, wasExecuted=F),
                                        list(entity=synGet("syn2321865", downloadFile=F), wasExecuted=F),
                                        list(entity=synGet(grpResId, downloadFile=F), wasExecuted=F),
                                        list(name=basename(thisCode), url=thisCode, wasExecuted=T)
