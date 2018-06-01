@@ -1,4 +1,4 @@
-All code for running the iNMF subtyping ([full text](http://dx.doi.org/10.1186/1755-8794-5-66)) on data sets in the Synapse repository of the CRC Subtyping Consortium. 
+All code for running the iNMF subtyping ([full text](https://doi.org/10.1186/1755-8794-5-66)) on data sets in the Synapse repository of the CRC Subtyping Consortium. 
 
 synapse_helper.r
 -----------------------
